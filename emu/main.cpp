@@ -7,33 +7,47 @@
 #include "common.h"
 #include "machinestate.h"
 
-template <const int bit_offset, const int bit_count>
-inline uint16_t extract(uint16_t src)
+template <typename T>
+inline void inst_move_helper(machine_state& state, uint16_t opcode)
 {
-    return (src >> (16 - bit_offset - bit_count)) & (0xffff >> (16 - bit_count));
-}
+    const auto src_mode = extract_bits<10, 3>(opcode);
+    const auto src_reg = extract_bits<13, 3>(opcode);
 
-template <typename T, typename TNext>
-void inst_move_assign_helper(machine_state& state, uint16_t opcode)
-{
-    const auto dst_reg = extract<4, 3>(opcode);
-    const auto dst_mode = extract<7, 3>(opcode);
-    const auto src_mode = extract<10, 3>(opcode);
-    const auto src_reg = extract<13, 3>(opcode);
+    const auto dst_mode = extract_bits<7, 3>(opcode);
+    const auto dst_reg = extract_bits<4, 3>(opcode);
 
-    T src_value = 0;
-    auto dst_ptr = state.get_pointer<T>(dst_mode, dst_reg);
-    *dst_ptr = (state.get_value<T>(src_mode, src_reg, src_value)) ? src_value : (T)state.next<TNext>();
+    T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
+    T* dst_ptr = state.get_pointer<T>(dst_mode, dst_reg);
+
+    IF_FALSE_THROW(dst_ptr != nullptr, "Couldn't evaluate destination pointer (mode: " << dst_mode << ", register: " << dst_reg << ")");
+
+    typedef extension_word<T>::type TExtension;
+
+    T imm = 0;
+    if (!src_ptr)
+    {
+        imm = (T)state.next<TExtension>();
+        src_ptr = &imm;
+    }
+
+    typedef std::make_signed<T>::type TSigned;
+
+    state.set_ccr_bit<ccr_bit::Negative>(*((TSigned*)src_ptr) < 0);
+    state.set_ccr_bit<ccr_bit::Zero>(*src_ptr == 0);
+    state.set_ccr_bit<ccr_bit::Overflow>(false);
+    state.set_ccr_bit<ccr_bit::Carry>(false);
+    
+    *dst_ptr = *src_ptr;
 }
 
 void inst_move(machine_state& state, uint16_t opcode)
 {
-    const auto size = extract<2, 2>(opcode);
+    const auto size = extract_bits<2, 2>(opcode);
     switch (size)
     {
-    case 1: inst_move_assign_helper<uint8_t, uint16_t>(state, opcode); break;   // Byte
-    case 2: inst_move_assign_helper<uint32_t, uint32_t>(state, opcode); break;  // Long
-    case 3: inst_move_assign_helper<uint16_t, uint16_t>(state, opcode); break;  // Word
+    case 1: inst_move_helper<uint8_t>(state, opcode); break;   // Byte
+    case 2: inst_move_helper<uint32_t>(state, opcode); break;  // Long
+    case 3: inst_move_helper<uint16_t>(state, opcode); break;  // Word
     default: 
         THROW("Invalid move size: " << size);
     }
@@ -41,9 +55,19 @@ void inst_move(machine_state& state, uint16_t opcode)
 
 void inst_moveq(machine_state& state, uint16_t opcode)
 {
-    const auto dst_reg = extract<4, 3>(opcode);
-    const uint8_t data = extract<8, 8>(opcode);
-    *(state.get_pointer<uint32_t>(0, dst_reg)) = data;
+    const auto dst_reg = extract_bits<4, 3>(opcode);
+    const uint8_t data = extract_bits<8, 8>(opcode);
+    uint32_t* dst_ptr = state.get_pointer<uint32_t>(0, dst_reg);
+
+    bool is_negative;
+    auto result = sign_extend(data, &is_negative);
+
+    state.set_ccr_bit<ccr_bit::Negative>(is_negative);
+    state.set_ccr_bit<ccr_bit::Zero>(result == 0);
+    state.set_ccr_bit<ccr_bit::Overflow>(false);
+    state.set_ccr_bit<ccr_bit::Carry>(false);
+
+    *dst_ptr = result;
 }
 
 void inst_rte(machine_state& state, uint16_t opcode)
@@ -56,9 +80,36 @@ void int_clr(machine_state& state, uint16_t opcode)
     THROW("Unimplemented instruction");
 }
 
+template <typename T>
+inline void inst_movea_helper(machine_state& state, uint16_t opcode)
+{
+    auto dst_reg = extract_bits<4, 3>(opcode);
+    auto src_mode = extract_bits<10, 3>(opcode);
+    auto src_reg = extract_bits<13, 3>(opcode);
+
+    T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
+    uint32_t* dst_ptr = state.get_pointer<uint32_t>(1, dst_reg);
+
+    T imm = 0;
+    if (!src_ptr)
+    {
+        imm = state.next<T>();
+        src_ptr = &imm;
+    }
+
+    *dst_ptr = sign_extend(*src_ptr);
+}
+
 void inst_movea(machine_state& state, uint16_t opcode)
 {
-    THROW("Unimplemented instruction");
+    const auto size = extract_bits<2, 2>(opcode);
+    switch (size)
+    {
+    case 2: inst_movea_helper<uint32_t>(state, opcode); break; // Long
+    case 3: inst_movea_helper<uint16_t>(state, opcode); break; // Word
+    default:
+        THROW("Invalid movea size");
+    }
 }
 
 void inst_movep(machine_state& state, uint16_t opcode)
@@ -71,9 +122,68 @@ void inst_negx(machine_state& state, uint16_t opcode)
     THROW("Unimplemented instruction");
 }
 
+template <typename T>
+inline void inst_add_helper(machine_state& state, uint16_t opcode)
+{
+    auto dst_reg = extract_bits<4, 3>(opcode);
+    auto direction = extract_bits<7, 1>(opcode);
+    auto src_mode = extract_bits<10, 3>(opcode);
+    auto src_reg = extract_bits<13, 3>(opcode);
+
+    T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
+    T* dst_ptr = state.get_pointer<T>(0, dst_reg);
+
+    typedef extension_word<T>::type TExtension;
+
+    T imm = 0;
+    if (!src_ptr)
+    {
+        imm = (T)state.next< TExtension>();
+        src_ptr = &imm;
+    }
+
+    T mask = 0;
+    switch (sizeof(T))
+    {
+    case 1: mask = 0xff; break;
+    case 2: mask = 0xffff; break;
+    case 4: mask = 0xffffffff; break;
+    default:
+        THROW("Unsupported precision");
+    }
+
+    typedef increased_precision<T>::type TIntermediate;
+
+    TIntermediate result = *src_ptr + *dst_ptr;
+    bool overflow = result > TIntermediate(mask);
+    T result_masked = T(result & TIntermediate(mask));
+
+    switch (direction)
+    {
+    case 0: *dst_ptr = T(result); break; // Write to 'dst'
+    case 1: *src_ptr = T(result); break; // Write to 'src'
+    default:
+        THROW("Invalid direction");
+    }
+
+    state.set_ccr_bit<ccr_bit::Extend>();
+    state.set_ccr_bit<ccr_bit::Negative>();
+    state.set_ccr_bit<ccr_bit::Zero>();
+    state.set_ccr_bit<ccr_bit::Overflow>();
+    state.set_ccr_bit<ccr_bit::Carry>();
+}
+
 void inst_add(machine_state& state, uint16_t opcode)
 {
-    THROW("Unimplemented instruction");
+    auto size = extract_bits<8, 2>(opcode);
+    switch (size)
+    {
+    case 0: inst_add_helper<uint8_t>(state, opcode); break;  // Byte
+    case 1: inst_add_helper<uint16_t>(state, opcode); break; // Word
+    case 2: inst_add_helper<uint32_t>(state, opcode); break; // Long
+    default:
+        THROW("Invalid add size");
+    }
 }
 
 #define ALL {}
@@ -127,11 +237,11 @@ std::vector<opcode_desc_t> g_opcode_descs = {
 
     {"ADD", inst_add, {
         {4, "Fixed", {0xd}},
-        {3, "Destination Register", ALL},
-        {1, "", {0, 1}},
+        {3, "Destination Register (always a D register)", ALL},
+        {1, "Direction", {0 /* Write to dst (D register) */, 1 /* Write to src (ea) */}},
         {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
-        {3, "Source Register", ALL},
-        {3, "Source Addressing Mode", ALL}}},
+        {3, "Source Addressing Mode", ALL},
+        {3, "Source Register", ALL}}},
 };
 
 
@@ -187,8 +297,8 @@ Adressing modes:
 
 int main(void)
 {
-    uint32_t a = 0xaabbccdd;
-    uint8_t b = (uint8_t)a;
+    uint8_t val = 0x10;
+    uint32_t res = sign_extend(val);
 
     try
     {

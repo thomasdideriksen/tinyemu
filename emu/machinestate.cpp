@@ -36,10 +36,11 @@ void machine_state::populate_lut(const opcode_desc_t& desc)
         const auto& part = desc.parts[item.part_index];
         const uint32_t max_value_plus_one = uint32_t(std::pow(uint32_t(2), part.bit_count));
         
-        // Note: An empty list means ALL possible values
+        // An empty list means ALL possible values
         auto possible_values = part.possible_values;
         if (possible_values.empty())
         {
+            // Generate all possible values
             for (uint16_t i = 0; i < max_value_plus_one; i++)
             {
                 possible_values.push_back(i);
@@ -89,7 +90,7 @@ void machine_state::load_program(size_t memory_offset, void* program, size_t pro
 void machine_state::tick()
 {
     auto opcode = next<uint16_t>();
-    auto inst = m_opcode_lut[opcode];
-    IF_FALSE_THROW(inst != nullptr, "Invalid or unimplemented opcode: 0x" << std::hex << opcode << std::dec << " (" << std::bitset<16>(opcode) << ")");
-    inst(*this, opcode);
+    auto inst_func = m_opcode_lut[opcode];
+    IF_FALSE_THROW(inst_func != nullptr, "Invalid or unimplemented opcode: 0x" << std::hex << opcode << std::dec << " (" << std::bitset<16>(opcode) << ")");
+    inst_func(*this, opcode);
 }

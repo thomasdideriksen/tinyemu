@@ -4,6 +4,15 @@
 #include <vector>
 #include "common.h"
 
+enum class ccr_bit
+{
+    Carry = 0,
+    Overflow = 1,
+    Zero = 2,
+    Negative = 3,
+    Extend = 4,
+};
+
 class machine_state;
 typedef void(*inst_func_ptr_t)(machine_state&, uint16_t);
 
@@ -27,7 +36,8 @@ private:
     struct registers_t
     {
         uint32_t D[8];      // Data registers (D0 - D7)
-        uint32_t A[7];      // Address registers (A0 - A6)
+        uint32_t A[8];      // Address registers (A0 - A7)
+
         uint32_t USP;       // User stack pointer (shadowed by A7 in user mode)
         uint32_t SSP;       // Supervisor stack pointer (shadowed by A7 in supervisor mode)
 
@@ -61,60 +71,23 @@ public:
         }
     }
 
-    template <typename T>
-    bool get_value(uint32_t mode, uint32_t reg, T& result)
+    template <const ccr_bit bit>
+    inline bool get_ccr_bit()
     {
-        switch (mode)
+        return ((m_registers.SR >> uint32_t(bit)) & 0x1) != 0;
+    }
+
+    template <const ccr_bit bit>
+    inline void set_ccr_bit(bool value)
+    {
+        uint16_t mask = 1 << uint32_t(bit);
+        if (value)
         {
-        case 0: // Data register direct
-            result = *((T*)&m_registers.D[reg]);
-            return true;
-
-        case 1: // Address register direct
-            result = *((T*)&m_registers.A[reg]);
-            return true;
-
-        case 2: // Address register indrect
-            result = *((T*)&m_memory[m_registers.A[reg]]);
-            return true;
-
-        case 3: // Address register indirect with postincrement
-            THROW("Unimplemented addressing mode: " << mode);
-
-        case 4: // Address register indirect with predecrement
-            THROW("Unimplemented addressing mode: " << mode);
-
-        case 5: // Address register indirect with displacement
-            THROW("Unimplemented addressing mode: " << mode);
-
-        case 6: // Address register indirect with index
-            THROW("Unimplemented addressing mode: " << mode);
-
-        case 7:
-            switch (reg)
-            {
-            case 0: // Absolute short
-                THROW("Unimplemented addressing mode: " << mode);
-
-            case 1: // Absolute long
-                THROW("Unimplemented addressing mode: " << mode);
-
-            case 2: // Program counter with displacement
-                THROW("Unimplemented addressing mode: " << mode);
-
-            case 3: // Program counter with index
-                THROW("Unimplemented addressing mode: " << mode);
-
-            case 4: // Immediate or status register
-                return false;
-
-            default:
-                THROW("Invalid register value for adressing mode 7: " << reg);
-            }
-            break;
-
-        default:
-            THROW("Invalid addressing mode: " << mode);
+            m_registers.SR |= mask;
+        }
+        else
+        {
+            m_registers.SR &= (~mask);
         }
     }
 
@@ -128,8 +101,8 @@ public:
 
         case 1: // Address register direct
             return (T*)&m_registers.A[reg];
-
-        case 2: // Address register indrect
+            
+        case 2: // Address register indirect
             return (T*)&m_memory[m_registers.A[reg]];
 
         case 3: // Address register indirect with postincrement
@@ -160,10 +133,10 @@ public:
                 THROW("Unimplemented addressing mode: " << mode);
 
             case 4: // Immediate or status register
-                THROW("Unimplemented addressing mode: " << mode);
+                return nullptr;
 
             default:
-                THROW("Invalid register value for adressing mode 7 (111): " << reg);
+                THROW("Invalid register value for adressing mode 7: " << reg);
             }
             break;
 

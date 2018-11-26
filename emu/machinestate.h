@@ -6,11 +6,11 @@
 
 enum class ccr_bit
 {
-    Carry = 0,
-    Overflow = 1,
-    Zero = 2,
-    Negative = 3,
-    Extend = 4,
+    carry = 0,
+    overflow = 1,
+    zero = 2,
+    negative = 3,
+    extend = 4,
 };
 
 class machine_state;
@@ -49,7 +49,7 @@ private:
     uint8_t* m_memory;
     std::vector<inst_func_ptr_t> m_opcode_lut;
     void populate_lut(const opcode_desc_t& desc);
-    
+ 
 public:
     machine_state();
     virtual ~machine_state();

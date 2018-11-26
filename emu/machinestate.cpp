@@ -65,7 +65,7 @@ machine_state::machine_state()
     IF_FALSE_THROW(m_memory != nullptr, "Allocation failed");
     ::memset(&m_registers, 0x0, sizeof(m_registers));
 
-    m_opcode_lut.resize(0xffff);
+    m_opcode_lut.resize(0xffff + 1);
     for (const auto desc : g_opcode_descs)
     {
         populate_lut(desc);

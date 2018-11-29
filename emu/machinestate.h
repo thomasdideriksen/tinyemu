@@ -14,21 +14,8 @@ enum class ccr_bit
 };
 
 class machine_state;
+
 typedef void(*inst_func_ptr_t)(machine_state&, uint16_t);
-
-struct opcode_part_desc_t
-{
-    uint32_t bit_count;
-    std::string name;
-    std::vector<uint16_t> possible_values;
-};
-
-struct opcode_desc_t
-{
-    std::string mnemonic;
-    inst_func_ptr_t func_ptr;
-    std::vector<opcode_part_desc_t> parts;
-};
 
 class machine_state
 {
@@ -48,7 +35,6 @@ private:
     registers_t m_registers;
     uint8_t* m_memory;
     std::vector<inst_func_ptr_t> m_opcode_lut;
-    void populate_lut(const opcode_desc_t& desc);
  
 public:
     machine_state();

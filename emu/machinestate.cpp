@@ -13,7 +13,7 @@ machine_state::machine_state()
     IF_FALSE_THROW(m_memory != nullptr, "Allocation failed");
     ::memset(&m_registers, 0x0, sizeof(m_registers));
 
-    make_opcode_table(m_opcode_lut);
+    make_opcode_table(m_opcode_table);
 }
 
 machine_state::~machine_state()
@@ -34,7 +34,7 @@ void machine_state::load_program(size_t memory_offset, void* program, size_t pro
 void machine_state::tick()
 {
     auto opcode = next<uint16_t>();
-    auto inst_func = m_opcode_lut[opcode];
+    auto inst_func = m_opcode_table[opcode];
     IF_FALSE_THROW(inst_func != nullptr, "Invalid or unimplemented opcode: 0x" << std::hex << opcode << std::dec << " (" << std::bitset<16>(opcode) << ")");
     inst_func(*this, opcode);
 }

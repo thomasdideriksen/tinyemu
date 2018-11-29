@@ -34,7 +34,7 @@ private:
 
     registers_t m_registers;
     uint8_t* m_memory;
-    std::vector<inst_func_ptr_t> m_opcode_lut;
+    std::vector<inst_func_ptr_t> m_opcode_table;
  
 public:
     machine_state();

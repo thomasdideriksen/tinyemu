@@ -69,9 +69,33 @@ void inst_rte(machine_state& state, uint16_t opcode)
     THROW("Unimplemented instruction");
 }
 
-void int_clr(machine_state& state, uint16_t opcode)
+template <typename T>
+void inst_clr_helper(machine_state& state, uint16_t opcode)
 {
-    THROW("Unimplemented instruction");
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+
+    T* ptr = state.get_pointer<T>(mode, reg);
+
+    *ptr = 0x0;
+
+    state.set_ccr_bit<ccr_bit::negative>(false);
+    state.set_ccr_bit<ccr_bit::zero>(true);
+    state.set_ccr_bit<ccr_bit::overflow>(false);
+    state.set_ccr_bit<ccr_bit::carry>(false);
+}
+
+void inst_clr(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    switch (size)
+    {
+    case 0: inst_clr_helper<uint8_t>(state, opcode); break;  // Byte
+    case 1: inst_clr_helper<uint16_t>(state, opcode); break; // Word
+    case 2: inst_clr_helper<uint32_t>(state, opcode); break; // Long
+    default:
+        THROW("Invalid clr size");
+    }
 }
 
 template <typename T>

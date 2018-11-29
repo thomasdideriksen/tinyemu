@@ -59,7 +59,7 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {3, "Addressing Mode", ALL},
         {3, "Register", ALL}}},
 
-    {"CLR", int_clr, {
+    {"CLR", inst_clr, {
         {8, "Prefix", {0x42}},
         {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
         {3, "Addressing Mode", ALL},

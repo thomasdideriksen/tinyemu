@@ -2,36 +2,29 @@
 #include "common.h"
 #include "machinestate.h"
 
+//
+// MOVE
+//
+
 template <typename T>
 inline void inst_move_helper(machine_state& state, uint16_t opcode)
 {
+    const auto dst_reg = extract_bits<4, 3>(opcode);
+    const auto dst_mode = extract_bits<7, 3>(opcode);
     const auto src_mode = extract_bits<10, 3>(opcode);
     const auto src_reg = extract_bits<13, 3>(opcode);
-
-    const auto dst_mode = extract_bits<7, 3>(opcode);
-    const auto dst_reg = extract_bits<4, 3>(opcode);
-
+    
     T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
     T* dst_ptr = state.get_pointer<T>(dst_mode, dst_reg);
 
-    IF_FALSE_THROW(dst_ptr != nullptr, "Couldn't evaluate destination pointer (mode: " << dst_mode << ", register: " << dst_reg << ")");
-
-    T imm = 0;
-    if (!src_ptr)
-    {
-        typedef traits<T>::extension_word_type_t extension_t;
-        imm = (T)state.next<extension_t>();
-        src_ptr = &imm;
-    }
+    *dst_ptr = *src_ptr;
 
     typedef traits<T>::signed_type_t signed_t;
 
-    state.set_ccr_bit<ccr_bit::negative>(*((signed_t*)src_ptr) < 0);
-    state.set_ccr_bit<ccr_bit::zero>(*src_ptr == 0);
-    state.set_ccr_bit<ccr_bit::overflow>(false);
-    state.set_ccr_bit<ccr_bit::carry>(false);
-
-    *dst_ptr = *src_ptr;
+    state.set_status_register<sr::negative>(*((signed_t*)src_ptr) < 0);
+    state.set_status_register<sr::zero>(*src_ptr == 0);
+    state.set_status_register<sr::overflow>(false);
+    state.set_status_register<sr::carry>(false);
 }
 
 void inst_move(machine_state& state, uint16_t opcode)
@@ -47,6 +40,10 @@ void inst_move(machine_state& state, uint16_t opcode)
     }
 }
 
+//
+// MOVEQ
+//
+
 void inst_moveq(machine_state& state, uint16_t opcode)
 {
     const auto dst_reg = extract_bits<4, 3>(opcode);
@@ -55,19 +52,18 @@ void inst_moveq(machine_state& state, uint16_t opcode)
 
     bool is_negative;
     auto result = sign_extend(data, &is_negative);
-
-    state.set_ccr_bit<ccr_bit::negative>(is_negative);
-    state.set_ccr_bit<ccr_bit::zero>(result == 0);
-    state.set_ccr_bit<ccr_bit::overflow>(false);
-    state.set_ccr_bit<ccr_bit::carry>(false);
-
+    
     *dst_ptr = result;
+
+    state.set_status_register<sr::negative>(is_negative);
+    state.set_status_register<sr::zero>(result == 0);
+    state.set_status_register<sr::overflow>(false);
+    state.set_status_register<sr::carry>(false);
 }
 
-void inst_rte(machine_state& state, uint16_t opcode)
-{
-    THROW("Unimplemented instruction");
-}
+//
+// CLR
+//
 
 template <typename T>
 void inst_clr_helper(machine_state& state, uint16_t opcode)
@@ -76,13 +72,12 @@ void inst_clr_helper(machine_state& state, uint16_t opcode)
     auto reg = extract_bits<13, 3>(opcode);
 
     T* ptr = state.get_pointer<T>(mode, reg);
-
     *ptr = 0x0;
 
-    state.set_ccr_bit<ccr_bit::negative>(false);
-    state.set_ccr_bit<ccr_bit::zero>(true);
-    state.set_ccr_bit<ccr_bit::overflow>(false);
-    state.set_ccr_bit<ccr_bit::carry>(false);
+    state.set_status_register<sr::negative>(false);
+    state.set_status_register<sr::zero>(true);
+    state.set_status_register<sr::overflow>(false);
+    state.set_status_register<sr::carry>(false);
 }
 
 void inst_clr(machine_state& state, uint16_t opcode)
@@ -98,6 +93,10 @@ void inst_clr(machine_state& state, uint16_t opcode)
     }
 }
 
+//
+// MOVEA
+//
+
 template <typename T>
 inline void inst_movea_helper(machine_state& state, uint16_t opcode)
 {
@@ -107,13 +106,6 @@ inline void inst_movea_helper(machine_state& state, uint16_t opcode)
 
     T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
     uint32_t* dst_ptr = state.get_pointer<uint32_t>(1 /* Always "address register direct" mode */, dst_reg);
-
-    T imm = 0;
-    if (!src_ptr)
-    {
-        imm = state.next<T>();
-        src_ptr = &imm;
-    }
 
     *dst_ptr = sign_extend(*src_ptr);
 }
@@ -130,15 +122,9 @@ void inst_movea(machine_state& state, uint16_t opcode)
     }
 }
 
-void inst_movep(machine_state& state, uint16_t opcode)
-{
-    THROW("Unimplemented instruction");
-}
-
-void inst_negx(machine_state& state, uint16_t opcode)
-{
-    THROW("Unimplemented instruction");
-}
+//
+// ADD
+//
 
 template <typename T>
 inline void inst_add_helper(machine_state& state, uint16_t opcode)
@@ -150,14 +136,6 @@ inline void inst_add_helper(machine_state& state, uint16_t opcode)
 
     T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
     T* dst_ptr = state.get_pointer<T>(0 /* Always "data register direct" mode */, dst_reg);
-
-    T imm = 0;
-    if (!src_ptr)
-    {
-        typedef traits<T>::extension_word_type_t extension_t;
-        imm = (T)state.next<extension_t>();
-        src_ptr = &imm;
-    }
 
     typedef traits<T>::higher_precision_type_t high_precision_t;
 
@@ -178,11 +156,11 @@ inline void inst_add_helper(machine_state& state, uint16_t opcode)
     bool carry = ((result_high_precision >> traits<T>::bits) & 0x1) != 0;
     bool negative = is_negative(result);
 
-    state.set_ccr_bit<ccr_bit::extend>(carry);
-    state.set_ccr_bit<ccr_bit::negative>(negative);
-    state.set_ccr_bit<ccr_bit::zero>(result == 0);
+    state.set_status_register<sr::extend>(carry);
+    state.set_status_register<sr::negative>(negative);
+    state.set_status_register<sr::zero>(result == 0);
     //state.set_ccr_bit<ccr_bit::overflow>(); <--- TODO
-    state.set_ccr_bit<ccr_bit::carry>(carry);
+    state.set_status_register<sr::carry>(carry);
 }
 
 void inst_add(machine_state& state, uint16_t opcode)
@@ -198,6 +176,10 @@ void inst_add(machine_state& state, uint16_t opcode)
     }
 }
 
+//
+// AND
+//
+
 template <typename T>
 inline void inst_and_helper(machine_state& state, uint16_t opcode)
 {
@@ -208,14 +190,6 @@ inline void inst_and_helper(machine_state& state, uint16_t opcode)
 
     T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
     T* dst_ptr = state.get_pointer<T>(0 /* Always "data register direct" mode */, dst_reg);
-
-    T imm = 0;
-    if (!src_ptr)
-    {
-        typedef traits<T>::extension_word_type_t extension_t;
-        imm = (T)state.next<extension_t>();
-        src_ptr = &imm;
-    }
 
     T result = (*src_ptr) & (*dst_ptr);
 
@@ -248,4 +222,24 @@ void inst_and(machine_state& state, uint16_t opcode)
     default:
         THROW("Invalid and size");
     }
+}
+
+//
+// EOR
+//
+
+template <typename T>
+void inst_eor_helper(machine_state& state, uint16_t opcode)
+{
+
+}
+
+void inst_eor(machine_state& state, uint16_t opcode)
+{
+    auto dst_reg = extract_bits<4, 3>(opcode);
+    auto direction = extract_bits<7, 1>(opcode);
+    auto src_mode = extract_bits<10, 3>(opcode);
+    auto src_reg = extract_bits<13, 3>(opcode);
+
+    THROW("Not implemented");
 }

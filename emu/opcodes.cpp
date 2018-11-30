@@ -21,6 +21,11 @@ struct opcode_desc_t
     std::vector<opcode_part_desc_t> parts;
 };
 
+void inst_unimplemented(machine_state&, uint16_t opcode)
+{
+    THROW("Unimplemented instruction with opcode: 0x" << std::hex << opcode << " (" << std::bitset<16>(opcode) << ")");
+}
+
 std::vector<opcode_desc_t> opcode_descriptions = {
     {"MOVE", inst_move, {
         {2, "Fixed", {0}},
@@ -44,29 +49,11 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {3, "Source Addressing Mode", ALL},
         {3, "Source Register", ALL}}},
 
-    {"MOVEP", inst_movep, {
-        {4, "Fixed", {0}},
-        {3, "Destination Register (always a D register)", ALL},
-        {1, "Fixed", {1}},
-        {1, "Direction", {0 /* Memory to register */, 1 /* Register to memory */}},
-        {1, "Size", {0 /* Word */, 1 /* Long */}},
-        {3, "Fixed", {1}},
-        {3, "Source Register (always an A register)", ALL}}},
-
-    {"NEGX", inst_negx, {
-        {8, "Fixed", {0x40}},
-        {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
-        {3, "Addressing Mode", ALL},
-        {3, "Register", ALL}}},
-
     {"CLR", inst_clr, {
         {8, "Prefix", {0x42}},
         {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
         {3, "Addressing Mode", ALL},
         {3, "Register", ALL}}},
-
-    {"RTE", inst_rte, {
-        {16, "Fixed", {0x4e73}}}},
 
     {"ADD", inst_add, {
         {4, "Fixed", {0xd}},
@@ -83,6 +70,32 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
         {3, "Source Addressing Mode", ALL},
         {3, "Source Register", ALL}}},
+
+    {"EOR", inst_eor, {
+        {4, "Fixed", {0xb}},
+        {3, "Destionation Register (always a D register)", ALL},
+        {1, "Direction", {0 /* Write to dst (D register) */, 1 /* Write to src (ea) */}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
+        {3, "Source Addressing Mode", ALL},
+        {3, "Source Register", ALL}}},
+    
+    {"RTE", inst_unimplemented, {
+        {16, "Fixed", {0x4e73}}}},
+
+    {"MOVEP", inst_unimplemented, {
+        {4, "Fixed", {0}},
+        {3, "Destination Register (always a D register)", ALL},
+        {1, "Fixed", {1}},
+        {1, "Direction", {0 /* Memory to register */, 1 /* Register to memory */}},
+        {1, "Size", {0 /* Word */, 1 /* Long */}},
+        {3, "Fixed", {1}},
+        {3, "Source Register (always an A register)", ALL}}},
+
+    {"NEGX", inst_unimplemented, {
+        {8, "Fixed", {0x40}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
+        {3, "Addressing Mode", ALL},
+        {3, "Register", ALL}}},
 
 };
 

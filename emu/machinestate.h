@@ -4,13 +4,16 @@
 #include <vector>
 #include "common.h"
 
-enum class ccr_bit
+enum class sr
 {
     carry = 0,
     overflow = 1,
     zero = 2,
     negative = 3,
     extend = 4,
+    mode = 13,
+    trace = 15,
+    // Note: Interrupt mask is bit 8, 9 and 10
 };
 
 class machine_state;
@@ -23,7 +26,7 @@ private:
     struct registers_t
     {
         uint32_t D[8];      // Data registers (D0 - D7)
-        uint32_t A[8];      // Address registers (A0 - A7)
+        uint32_t A[7];      // Address registers (A0 - A6)
 
         uint32_t USP;       // User stack pointer (shadowed by A7 in user mode)
         uint32_t SSP;       // Supervisor stack pointer (shadowed by A7 in supervisor mode)
@@ -35,6 +38,21 @@ private:
     registers_t m_registers;
     uint8_t* m_memory;
     std::vector<inst_func_ptr_t> m_opcode_table;
+    uint32_t m_imm_storage;
+
+    template <typename T>
+    inline T* get_address_register_pointer(uint32_t reg)
+    {
+        // Note: Adress register 7 is special: It refers to the user *or* supervisor stack pointer, depending on the current CPU mode
+        if (reg == 7)
+        {
+            return (T*)(get_status_register<sr::mode>() ? &m_registers.SSP : &m_registers.USP);
+        }
+        else
+        {
+            return (T*)m_registers.A[reg];
+        }
+    }
  
 public:
     machine_state();
@@ -57,14 +75,14 @@ public:
         }
     }
 
-    template <const ccr_bit bit>
-    inline bool get_ccr_bit()
+    template <const sr bit>
+    inline bool get_status_register()
     {
         return ((m_registers.SR >> uint32_t(bit)) & 0x1) != 0;
     }
 
-    template <const ccr_bit bit>
-    inline void set_ccr_bit(bool value)
+    template <const sr bit>
+    inline void set_status_register(bool value)
     {
         uint16_t mask = 1 << uint32_t(bit);
         if (value)
@@ -86,10 +104,10 @@ public:
             return (T*)&m_registers.D[reg];
 
         case 1: // Address register direct
-            return (T*)&m_registers.A[reg];
+            return get_address_register_pointer<T>(reg);
             
         case 2: // Address register indirect
-            return (T*)&m_memory[m_registers.A[reg]];
+            return (T*)&m_memory[*(get_address_register_pointer<T>(reg))];
 
         case 3: // Address register indirect with postincrement
             THROW("Unimplemented addressing mode: " << mode);
@@ -119,7 +137,9 @@ public:
                 THROW("Unimplemented addressing mode: " << mode);
 
             case 4: // Immediate or status register
-                return nullptr;
+                typedef traits<T>::extension_word_type_t extension_t;
+                m_imm_storage = next<extension_t>();
+                return (T*)&m_imm_storage;
 
             default:
                 THROW("Invalid register value for adressing mode 7: " << reg);

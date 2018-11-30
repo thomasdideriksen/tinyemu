@@ -15,6 +15,7 @@ http://www.easy68k.com/paulrsm/doc/dpbm68k1.htm
 https://wiki.neogeodev.org/index.php?title=68k
 https://wiki.neogeodev.org/index.php?title=68k_instructions_timings
 http://68k.hax.com/NEGX <--- 
+http://alanclements.org/68kusersupervisor.html
 
 https://www.ticalc.org/pub/text/68k/68k2x86.txt
 https://www.ticalc.org/pub/text/68k/68kguide.txt

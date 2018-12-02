@@ -2,6 +2,20 @@
 #include "common.h"
 #include "machinestate.h"
 
+#define PROCESS_SIZE(size, helper)\
+    switch (size) {\
+    case 0: ##helper<uint8_t>(state, opcode); break;\
+    case 1: ##helper<uint16_t>(state, opcode); break;\
+    case 2: ##helper<uint32_t>(state, opcode); break;\
+    default: THROW("Invalid size");}
+
+#define PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, helper, second_template_param)\
+    switch (size) {\
+    case 0: ##helper<uint8_t, second_template_param>(state, opcode); break;\
+    case 1: ##helper<uint16_t, second_template_param>(state, opcode); break;\
+    case 2: ##helper<uint32_t, second_template_param>(state, opcode); break;\
+    default: THROW("Invalid size");}
+
 //
 // MOVE
 //
@@ -47,7 +61,7 @@ void inst_move(machine_state& state, uint16_t opcode)
 void inst_moveq(machine_state& state, uint16_t opcode)
 {
     const auto dst_reg = extract_bits<4, 3>(opcode);
-    const uint8_t data = extract_bits<8, 8>(opcode);
+    const uint8_t data = uint8_t(extract_bits<8, 8>(opcode));
     uint32_t* dst_ptr = state.get_pointer<uint32_t>(0, dst_reg);
 
     bool is_negative;
@@ -83,14 +97,7 @@ void inst_clr_helper(machine_state& state, uint16_t opcode)
 void inst_clr(machine_state& state, uint16_t opcode)
 {
     auto size = extract_bits<8, 2>(opcode);
-    switch (size)
-    {
-    case 0: inst_clr_helper<uint8_t>(state, opcode); break;  // Byte
-    case 1: inst_clr_helper<uint16_t>(state, opcode); break; // Word
-    case 2: inst_clr_helper<uint32_t>(state, opcode); break; // Long
-    default:
-        THROW("Invalid clr size");
-    }
+    PROCESS_SIZE(size, inst_clr_helper);
 }
 
 //
@@ -166,14 +173,7 @@ inline void inst_add_helper(machine_state& state, uint16_t opcode)
 void inst_add(machine_state& state, uint16_t opcode)
 {
     auto size = extract_bits<8, 2>(opcode);
-    switch (size)
-    {
-    case 0: inst_add_helper<uint8_t>(state, opcode); break;  // Byte
-    case 1: inst_add_helper<uint16_t>(state, opcode); break; // Word
-    case 2: inst_add_helper<uint32_t>(state, opcode); break; // Long
-    default:
-        THROW("Invalid add size");
-    }
+    PROCESS_SIZE(size, inst_add_helper);
 }
 
 //
@@ -214,14 +214,7 @@ inline void inst_and_helper(machine_state& state, uint16_t opcode)
 void inst_and(machine_state& state, uint16_t opcode)
 {
     auto size = extract_bits<8, 2>(opcode);
-    switch (size)
-    {
-    case 0: inst_and_helper<uint8_t>(state, opcode); break;  // Byte
-    case 1: inst_and_helper<uint16_t>(state, opcode); break; // Word
-    case 2: inst_and_helper<uint32_t>(state, opcode); break; // Long
-    default:
-        THROW("Invalid and size");
-    }
+    PROCESS_SIZE(size, inst_and_helper);
 }
 
 //
@@ -243,3 +236,72 @@ void inst_eor(machine_state& state, uint16_t opcode)
 
     THROW("Not implemented");
 }
+
+//
+// ORI, ANDI, EORI
+//
+
+struct operation_or { template <typename T> static void execute(T* src_dst, T operand) { *src_dst |= operand; } };
+struct operation_and { template <typename T> static void execute(T* src_dst, T operand) { *src_dst &= operand; } };
+struct operation_eor { template <typename T> static void execute(T* src_dst, T operand) { *src_dst ^= operand; } };
+
+template <typename T, typename O>
+void inst_logical_imm_helper(machine_state& state, uint16_t opcode)
+{
+    T* dst_ptr = nullptr;
+
+    switch (opcode)
+    {
+    case 0x3c: // CCR
+    case 0x7c: // SR
+        dst_ptr = (T*)state.get_status_register_pointer();
+        break;
+
+    default:
+        auto mode = extract_bits<10, 3>(opcode);
+        auto reg = extract_bits<13, 3>(opcode);
+        dst_ptr = state.get_pointer<T>(mode, reg);
+        break;
+    }
+
+    typedef traits<T>::extension_word_type_t extension_t;
+    auto imm = state.next<extension_t>();
+
+    O::template execute<T>(dst_ptr, T(imm));
+
+    state.set_status_register<sr::negative>(most_significant_bit(*dst_ptr));
+    state.set_status_register<sr::zero>(*dst_ptr == 0);
+    state.set_status_register<sr::overflow>(false);
+    state.set_status_register<sr::carry>(false);
+}
+
+//
+// ORI
+//
+
+void inst_ori(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_logical_imm_helper, operation_or);
+}
+
+//
+// ANDI
+//
+
+void inst_andi(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_logical_imm_helper, operation_and);
+}
+
+//
+// EORI
+//
+
+void inst_eori(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_logical_imm_helper, operation_eor);
+}
+

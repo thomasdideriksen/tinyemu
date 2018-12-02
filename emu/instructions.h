@@ -9,3 +9,6 @@ void inst_movea(machine_state& state, uint16_t opcode);
 void inst_add(machine_state& state, uint16_t opcode);
 void inst_and(machine_state& state, uint16_t opcode);
 void inst_eor(machine_state& state, uint16_t opcode);
+void inst_ori(machine_state& state, uint16_t opcode);
+void inst_andi(machine_state& state, uint16_t opcode);
+void inst_eori(machine_state& state, uint16_t opcode);

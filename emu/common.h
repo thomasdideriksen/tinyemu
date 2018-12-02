@@ -64,3 +64,9 @@ inline bool is_negative(T value)
     signed_t* ptr = (signed_t*)&value;
     return (*ptr) < 0;
 }
+
+template <typename T>
+bool most_significant_bit(T value)
+{
+    return (value >> (traits<T>::bits - 1)) != 0;
+}

@@ -73,7 +73,7 @@ std::vector<opcode_desc_t> opcode_descriptions = {
 
     {"EOR", inst_eor, {
         {4, "Fixed", {0xb}},
-        {3, "Destionation Register (always a D register)", ALL},
+        {3, "Destination Register (always a D register)", ALL},
         {1, "Direction", {0 /* Write to dst (D register) */, 1 /* Write to src (ea) */}},
         {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
         {3, "Source Addressing Mode", ALL},
@@ -95,6 +95,24 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {8, "Fixed", {0x40}},
         {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
         {3, "Addressing Mode", ALL},
+        {3, "Register", ALL}}},
+
+    {"ORI", inst_ori, {
+        {8, "Fixed", {0}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
+        {3, "Mode", ALL},
+        {3, "Register", ALL}}},
+
+    {"ANDI", inst_andi, {
+        {8, "Fixed", {0x2}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
+        {3, "Mode", ALL},
+        {3, "Register", ALL}}},
+
+    {"EORI", inst_eori, {
+        {8, "Fixed", {0xa}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
+        {3, "Mode", ALL},
         {3, "Register", ALL}}},
 
 };

@@ -50,7 +50,7 @@ private:
         }
         else
         {
-            return (T*)m_registers.A[reg];
+            return (T*)&m_registers.A[reg];
         }
     }
  
@@ -68,12 +68,14 @@ public:
         switch (sizeof(T))
         {
         case 1: return *ptr;
-        case 2: return ::_byteswap_ushort(*ptr);
-        case 4: return ::_byteswap_ulong(*ptr);
+        case 2: return T(::_byteswap_ushort(*ptr));
+        case 4: return T(::_byteswap_ulong(*ptr));
         default: 
             THROW("Invalid type size");
         }
     }
+
+    uint16_t* get_status_register_pointer();
 
     template <const sr bit>
     inline bool get_status_register()

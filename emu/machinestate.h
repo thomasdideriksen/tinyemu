@@ -75,8 +75,6 @@ public:
         }
     }
 
-    uint16_t* get_status_register_pointer();
-
     template <const sr bit>
     inline bool get_status_register()
     {
@@ -97,7 +95,7 @@ public:
         }
     }
 
-    template <typename T>
+    template <typename T, const bool immediate = true>
     inline T* get_pointer(uint32_t mode, uint32_t reg)
     {
         switch (mode)
@@ -139,9 +137,16 @@ public:
                 THROW("Unimplemented addressing mode: " << mode);
 
             case 4: // Immediate or status register
-                typedef traits<T>::extension_word_type_t extension_t;
-                m_imm_storage = next<extension_t>();
-                return (T*)&m_imm_storage;
+                if (immediate)
+                {
+                    typedef traits<T>::extension_word_type_t extension_t;
+                    m_imm_storage = next<extension_t>();
+                    return (T*)&m_imm_storage;
+                }
+                else
+                {
+                    return (T*)&m_registers.SR;
+                }
 
             default:
                 THROW("Invalid register value for adressing mode 7: " << reg);

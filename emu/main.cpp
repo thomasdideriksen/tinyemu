@@ -28,6 +28,8 @@ http://ocw.utm.my/pluginfile.php/1340/mod_resource/content/0/04-68k-Addressing.M
 
 http://www.cse.dmu.ac.uk/~sexton/WWWPages/exceptions.html <--- TRAP, reset vectors, exception prpocessing
 
+http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt <-- Overflow, carry
+
 8, 32-bit data registers and 8, 32-bit address registers
 7 interrupt levels
 56 instructions

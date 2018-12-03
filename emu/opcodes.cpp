@@ -115,6 +115,29 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {3, "Mode", ALL},
         {3, "Register", ALL}}},
 
+    {"SUBI", inst_subi, {
+        {8, "Fixed", {0x4}},
+        {2, "Size", ALL},
+        {3, "Mode", ALL},
+        {3, "Register", ALL}}},
+
+    {"ADDI", inst_addi, {
+        {8, "Fixed", {0x6}},
+        {2, "Size", ALL},
+        {3, "Mode", ALL},
+        {3, "Register", ALL}}},
+
+    {"CMPI", inst_cmpi, {
+        {8, "Fixed", {0xc}},
+        {2, "Size", ALL},
+        {3, "Mode", ALL},
+        {3, "Register", ALL}}},
+
+    {"BTST", inst_btst, {
+        {10, "Fixed", {0x20}},
+        {3, "Mode", ALL},
+        {3, "Register", ALL}}},
+
 };
 
 void make_opcode_table_range(const opcode_desc_t& desc, inst_func_ptr_t* table_ptr)

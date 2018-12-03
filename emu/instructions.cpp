@@ -33,9 +33,7 @@ inline void inst_move_helper(machine_state& state, uint16_t opcode)
 
     *dst_ptr = *src_ptr;
 
-    typedef traits<T>::signed_type_t signed_t;
-
-    state.set_status_register<sr::negative>(*((signed_t*)src_ptr) < 0);
+    state.set_status_register<sr::negative>(is_negative<T>(*dst_ptr));
     state.set_status_register<sr::zero>(*src_ptr == 0);
     state.set_status_register<sr::overflow>(false);
     state.set_status_register<sr::carry>(false);
@@ -160,7 +158,7 @@ inline void inst_add_helper(machine_state& state, uint16_t opcode)
         THROW("Invalid direction");
     }
 
-    bool carry = ((result_high_precision >> traits<T>::bits) & 0x1) != 0;
+    bool carry = has_carry(result_high_precision);
     bool negative = is_negative(result);
 
     state.set_status_register<sr::extend>(carry);
@@ -248,21 +246,9 @@ struct operation_eor { template <typename T> static void execute(T* src_dst, T o
 template <typename T, typename O>
 void inst_logical_imm_helper(machine_state& state, uint16_t opcode)
 {
-    T* dst_ptr = nullptr;
-
-    switch (opcode)
-    {
-    case 0x3c: // CCR
-    case 0x7c: // SR
-        dst_ptr = (T*)state.get_status_register_pointer();
-        break;
-
-    default:
-        auto mode = extract_bits<10, 3>(opcode);
-        auto reg = extract_bits<13, 3>(opcode);
-        dst_ptr = state.get_pointer<T>(mode, reg);
-        break;
-    }
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+    T* dst_ptr = state.get_pointer<T, false /* Choose status register over immediate */>(mode, reg);
 
     typedef traits<T>::extension_word_type_t extension_t;
     auto imm = state.next<extension_t>();
@@ -305,3 +291,106 @@ void inst_eori(machine_state& state, uint16_t opcode)
     PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_logical_imm_helper, operation_eor);
 }
 
+//
+// SUBI, ADDI
+//
+
+struct operation_sub { template <typename T> static T execute(T a, T b) { return a - b; } };
+struct operation_add { template <typename T> static T execute(T a, T b) { return a + b; } };
+
+template <typename T, typename O>
+void inst_arithmetic_imm_helper(machine_state& state, uint16_t opcode)
+{
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+
+    T* dst_ptr = state.get_pointer<T>(mode, reg);
+
+    typedef traits<T>::extension_word_type_t extension_t;
+    auto imm = state.next<extension_t>();
+
+    typedef traits<T>::higher_precision_type_t high_precision_t;
+
+    high_precision_t result_high_precision = 
+        O::template execute<high_precision_t>(
+            high_precision_t(*dst_ptr), 
+            high_precision_t(imm));
+
+    bool carry = has_carry(result_high_precision);
+
+    *dst_ptr = T(result_high_precision & high_precision_t(traits<T>::max));
+
+    state.set_status_register<sr::extend>(carry);
+    state.set_status_register<sr::negative>(is_negative<T>(*dst_ptr));
+    state.set_status_register<sr::zero>(*dst_ptr == 0);
+    //state.set_status_register<sr::overflow>(); <-- TODO 
+    state.set_status_register<sr::carry>(carry);
+}
+
+//
+// SUBI
+//
+
+void inst_subi(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_arithmetic_imm_helper, operation_sub);
+}
+
+//
+// ADDI
+//
+
+void inst_addi(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_arithmetic_imm_helper, operation_add);
+}
+
+//
+// CMPI
+//
+
+template <typename T>
+void inst_cmpi_helper(machine_state& state, uint16_t opcode)
+{
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+    T* ptr = state.get_pointer<T>(mode, reg);
+
+    typedef traits<T>::extension_word_type_t extension_t;
+    extension_t imm = state.next<extension_t>();
+
+    typedef traits<T>::higher_precision_type_t high_precision_t;
+    high_precision_t result_high_precision = 
+        high_precision_t(*ptr) - 
+        high_precision_t(imm);
+   
+    T result = (T)(result_high_precision & high_precision_t(traits<T>::max));
+
+    state.set_status_register<sr::negative>(is_negative(result));
+    state.set_status_register<sr::zero>(result == 0);
+    //state.set_status_register<sr::overflow>();
+    state.set_status_register<sr::carry>(has_carry(result_high_precision));
+}
+
+void inst_cmpi(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE(size, inst_cmpi_helper);
+}
+
+//
+// BTST
+//
+
+void inst_btst(machine_state& state, uint16_t opcode)
+{
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+    auto ptr = state.get_pointer<uint32_t>(mode, reg);
+
+
+
+
+}

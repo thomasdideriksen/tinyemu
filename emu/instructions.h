@@ -12,3 +12,7 @@ void inst_eor(machine_state& state, uint16_t opcode);
 void inst_ori(machine_state& state, uint16_t opcode);
 void inst_andi(machine_state& state, uint16_t opcode);
 void inst_eori(machine_state& state, uint16_t opcode);
+void inst_subi(machine_state& state, uint16_t opcode);
+void inst_addi(machine_state& state, uint16_t opcode);
+void inst_cmpi(machine_state& state, uint16_t opcode);
+void inst_btst(machine_state& state, uint16_t opcode);

@@ -66,7 +66,13 @@ inline bool is_negative(T value)
 }
 
 template <typename T>
-bool most_significant_bit(T value)
+inline bool most_significant_bit(T value)
 {
     return (value >> (traits<T>::bits - 1)) != 0;
+}
+
+template <typename T>
+inline bool has_carry(T higher_precision_result)
+{
+    return ((higher_precision_result >> (sizeof(T) * 4)) & 0x1) != 0;
 }

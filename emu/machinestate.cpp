@@ -38,8 +38,3 @@ void machine_state::tick()
     IF_FALSE_THROW(inst_func != nullptr, "Invalid or unimplemented opcode: 0x" << std::hex << opcode << std::dec << " (" << std::bitset<16>(opcode) << ")");
     inst_func(*this, opcode);
 }
-
-uint16_t* machine_state::get_status_register_pointer()
-{
-    return &m_registers.SR;
-}

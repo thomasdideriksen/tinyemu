@@ -384,13 +384,25 @@ void inst_cmpi(machine_state& state, uint16_t opcode)
 // BTST
 //
 
-void inst_btst(machine_state& state, uint16_t opcode)
+void inst_btst_bit_index_imm(machine_state& state, uint16_t opcode)
 {
     auto mode = extract_bits<10, 3>(opcode);
     auto reg = extract_bits<13, 3>(opcode);
-    auto ptr = state.get_pointer<uint32_t>(mode, reg);
+    
+    uint32_t comparand = *(state.get_pointer<uint32_t>(mode, reg));
 
+    auto bit_index = state.next<uint16_t>();
+    switch (mode)
+    {
+    case 0: bit_index &= 0x1f; break; // Modulo 32 for data registers
+    default: bit_index &= 0x7; break; // Modulo 8, otherwise (aka. memory locations)
+    }
 
+    const uint32_t mask = (1 << bit_index);
+    state.set_status_register<sr::zero>((comparand & mask) == 0);
+}
 
-
+void inst_btst_bit_index_data_reg(machine_state& state, uint16_t opcode)
+{
+    // TODO
 }

@@ -133,11 +133,17 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {3, "Mode", ALL},
         {3, "Register", ALL}}},
 
-    {"BTST", inst_btst, {
+    {"BTST", inst_btst_bit_index_imm, {
         {10, "Fixed", {0x20}},
-        {3, "Mode", ALL},
-        {3, "Register", ALL}}},
+        {3, "Destination mode", ALL},
+        {3, "Destination register", ALL}}},
 
+    { "BTST", inst_btst_bit_index_data_reg, {
+        {4, "Fixed", {0}},
+        {3, "Source register (Always a D register)", ALL},
+        {3, "Fixed", {0x4}},
+        {3, "Destination mode", ALL},
+        {3, "Destination register", ALL}}},
 };
 
 void make_opcode_table_range(const opcode_desc_t& desc, inst_func_ptr_t* table_ptr)

@@ -31,10 +31,10 @@ inline void inst_move_helper(machine_state& state, uint16_t opcode)
     T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
     T* dst_ptr = state.get_pointer<T>(dst_mode, dst_reg);
 
-    *dst_ptr = *src_ptr;
+    state.write<T>(dst_ptr, *src_ptr);
 
     state.set_status_register<sr::negative>(is_negative<T>(*dst_ptr));
-    state.set_status_register<sr::zero>(*src_ptr == 0);
+    state.set_status_register<sr::zero>(*dst_ptr == 0);
     state.set_status_register<sr::overflow>(false);
     state.set_status_register<sr::carry>(false);
 }
@@ -65,7 +65,7 @@ void inst_moveq(machine_state& state, uint16_t opcode)
     bool is_negative;
     auto result = sign_extend(data, &is_negative);
     
-    *dst_ptr = result;
+    state.write(dst_ptr, result);
 
     state.set_status_register<sr::negative>(is_negative);
     state.set_status_register<sr::zero>(result == 0);
@@ -84,7 +84,7 @@ void inst_clr_helper(machine_state& state, uint16_t opcode)
     auto reg = extract_bits<13, 3>(opcode);
 
     T* ptr = state.get_pointer<T>(mode, reg);
-    *ptr = 0x0;
+    state.write<T>(ptr, 0x0);
 
     state.set_status_register<sr::negative>(false);
     state.set_status_register<sr::zero>(true);
@@ -112,7 +112,7 @@ inline void inst_movea_helper(machine_state& state, uint16_t opcode)
     T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
     uint32_t* dst_ptr = state.get_pointer<uint32_t>(1 /* Always "address register direct" mode */, dst_reg);
 
-    *dst_ptr = sign_extend(*src_ptr);
+    state.write<uint32_t>(dst_ptr, sign_extend(*src_ptr));
 }
 
 void inst_movea(machine_state& state, uint16_t opcode)
@@ -152,8 +152,8 @@ inline void inst_add_helper(machine_state& state, uint16_t opcode)
 
     switch (direction)
     {
-    case 0: *dst_ptr = T(result); break; // Write to 'dst'
-    case 1: *src_ptr = T(result); break; // Write to 'src'
+    case 0: state.write<T>(dst_ptr, T(result)); break; // Write to 'dst'
+    case 1: state.write<T>(src_ptr, T(result)); break; // Write to 'src'
     default:
         THROW("Invalid direction");
     }
@@ -193,8 +193,8 @@ inline void inst_and_helper(machine_state& state, uint16_t opcode)
 
     switch (direction)
     {
-    case 0: *dst_ptr = T(result); break; // Write to 'dst'
-    case 1: *src_ptr = T(result); break; // Write to 'src'
+    case 0: state.write<T>(dst_ptr, T(result)); break; // Write to 'dst'
+    case 1: state.write<T>(src_ptr, T(result)); break; // Write to 'src'
     default:
         THROW("Invalid direction");
     }
@@ -239,9 +239,9 @@ void inst_eor(machine_state& state, uint16_t opcode)
 // ORI, ANDI, EORI
 //
 
-struct operation_or { template <typename T> static void execute(T* src_dst, T operand) { *src_dst |= operand; } };
-struct operation_and { template <typename T> static void execute(T* src_dst, T operand) { *src_dst &= operand; } };
-struct operation_eor { template <typename T> static void execute(T* src_dst, T operand) { *src_dst ^= operand; } };
+struct operation_or { template <typename T> static T execute(T a, T b) { return a | b; } };
+struct operation_and { template <typename T> static T execute(T a, T b) { return a & b; } };
+struct operation_eor { template <typename T> static T execute(T a, T b) { return a ^ b; } };
 
 template <typename T, typename O>
 void inst_logical_imm_helper(machine_state& state, uint16_t opcode)
@@ -253,7 +253,8 @@ void inst_logical_imm_helper(machine_state& state, uint16_t opcode)
     typedef traits<T>::extension_word_type_t extension_t;
     auto imm = state.next<extension_t>();
 
-    O::template execute<T>(dst_ptr, T(imm));
+    T result = O::template execute<T>(*dst_ptr, T(imm));
+    state.write<T>(dst_ptr, result);
 
     state.set_status_register<sr::negative>(most_significant_bit(*dst_ptr));
     state.set_status_register<sr::zero>(*dst_ptr == 0);
@@ -318,7 +319,8 @@ void inst_arithmetic_imm_helper(machine_state& state, uint16_t opcode)
 
     bool carry = has_carry(result_high_precision);
 
-    *dst_ptr = T(result_high_precision & high_precision_t(traits<T>::max));
+    T result = T(result_high_precision & high_precision_t(traits<T>::max));
+    state.write<T>(dst_ptr, result);
 
     state.set_status_register<sr::extend>(carry);
     state.set_status_register<sr::negative>(is_negative<T>(*dst_ptr));

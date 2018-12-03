@@ -8,8 +8,8 @@
 
 machine_state::machine_state()
 {
-    uint32_t size = uint32_t(std::pow(int32_t(2), int32_t(24)));
-    m_memory = (uint8_t*)::malloc(size);
+    m_memory_size = size_t(std::pow(int32_t(2), int32_t(24)));
+    m_memory = (uint8_t*)::malloc(m_memory_size);
     IF_FALSE_THROW(m_memory != nullptr, "Allocation failed");
     ::memset(&m_registers, 0x0, sizeof(m_registers));
 

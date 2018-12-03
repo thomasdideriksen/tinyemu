@@ -37,6 +37,7 @@ private:
 
     registers_t m_registers;
     uint8_t* m_memory;
+    size_t m_memory_size;
     std::vector<inst_func_ptr_t> m_opcode_table;
     uint32_t m_imm_storage;
 
@@ -59,6 +60,16 @@ public:
     virtual ~machine_state();
     void load_program(size_t memory_offset, void* program, size_t program_size, uint32_t init_pc);
     void tick();
+    
+    template <typename T>
+    inline void write(T* dst, T value)
+    {
+        *dst = value;
+        if ((uint8_t*)dst >= m_memory && (uint8_t*)dst < (m_memory + m_memory_size))
+        {
+            // TODO: Callback for memory mapped stuff
+        }
+    }
 
     template <typename T>
     T next()

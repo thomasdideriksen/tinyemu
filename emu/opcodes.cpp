@@ -1,6 +1,7 @@
 #pragma once
 #include <stack>
 #include <bitset>
+#include <unordered_map>
 #include "opcodes.h"
 #include "common.h"
 #include "instructions.h"
@@ -21,19 +22,58 @@ struct opcode_desc_t
     std::vector<opcode_part_desc_t> parts;
 };
 
+const uint32_t D = 1 << 0;      // Data register direct
+const uint32_t A = 1 << 1;      // Address register direct
+const uint32_t Ai = 1 << 2;     // Address register indirect
+const uint32_t AiPi = 1 << 3;   // Address register indirect with post increment
+const uint32_t AiPd = 1 << 4;   // Address register indirect with post decrement
+const uint32_t AiD = 1 << 5;    // Address register indirect with displacement
+const uint32_t AiI = 1 << 6;    // Address register indirect with index
+const uint32_t AbsS = 1 << 7;   // Absolute short
+const uint32_t AbsL = 1 << 8;   // Absolute long
+const uint32_t PcD = 1 << 9;    // Program counter with displacement
+const uint32_t PcI = 1 << 10;   // Program counter with index
+const uint32_t ImmSr = 1 << 11; // Immediate or status register
+
+std::vector<uint16_t> make_addressing_modes(uint32_t modes)
+{
+    std::vector<uint16_t> result;
+    for (uint32_t i = 0; i <= 11; i++)
+    {
+        if ((i & modes) != 0)
+        {
+            if (i <= 6)
+            {
+                for (uint16_t j = 0; j < 8; j++)
+                {
+                    result.push_back((i << 3) | j);
+                }
+            }
+            else
+            {
+                result.push_back((7 << 3) | (i - 7));
+            }
+        }
+    }
+    return result;
+}
+
+#define MODES(modes) make_addressing_modes(modes)
+#define ALL_MODES make_addressing_modes(0xffffffff)
+#define ALL_MODES_EXCEPT(modes) make_addressing_modes(~(modes))
+
 void inst_unimplemented(machine_state&, uint16_t opcode)
 {
     THROW("Unimplemented instruction with opcode: 0x" << std::hex << opcode << " (" << std::bitset<16>(opcode) << ")");
 }
 
 std::vector<opcode_desc_t> opcode_descriptions = {
+
     {"MOVE", inst_move, {
         {2, "Fixed", {0}},
         {2, "Size", {1 /* Byte */, 2 /* Long */, 3 /* Word */}},
-        {3, "Destination Register", ALL},
-        {3, "Destination Addressing Mode", {0, 2, 3, 4, 5, 6, 7}},
-        {3, "Source Register", ALL},
-        {3, "Source Addressing Mode", ALL}}},
+        {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)},
+        {6, "Effective address, source", ALL_MODES}}},
 
     {"MOVEQ", inst_moveq, {
         {4, "Fixed", {0x7}},
@@ -46,14 +86,12 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {2, "Size", {2 /* Long */, 3 /* Word */}},
         {3, "Destination Register (always an A register)", ALL},
         {3, "Fixed", {1}},
-        {3, "Source Addressing Mode", ALL},
-        {3, "Source Register", ALL}}},
+        {3, "Effective address, source", ALL_MODES}}},
 
     {"CLR", inst_clr, {
         {8, "Prefix", {0x42}},
         {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
-        {3, "Addressing Mode", ALL},
-        {3, "Register", ALL}}},
+        {3, "Effective address", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
 
     {"ADD", inst_add, {
         {4, "Fixed", {0xd}},
@@ -129,21 +167,18 @@ std::vector<opcode_desc_t> opcode_descriptions = {
 
     {"CMPI", inst_cmpi, {
         {8, "Fixed", {0xc}},
-        {2, "Size", ALL},
-        {3, "Mode", ALL},
-        {3, "Register", ALL}}},
-
-    {"BTST", inst_btst_bit_index_imm, {
+        {2, "Size",  {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
+        {6, "Effective address", ALL_MODES_EXCEPT(A | ImmSr)}}},
+    
+    {"BTST (immediate)", inst_btst, {
         {10, "Fixed", {0x20}},
-        {3, "Destination mode", ALL},
-        {3, "Destination register", ALL}}},
+        {6, "Effective address, destination ", ALL_MODES_EXCEPT(A | ImmSr)}} },
 
-    { "BTST", inst_btst_bit_index_data_reg, {
+    {"BTST (register)", inst_btst, {
         {4, "Fixed", {0}},
-        {3, "Source register (Always a D register)", ALL},
-        {3, "Fixed", {0x4}},
-        {3, "Destination mode", ALL},
-        {3, "Destination register", ALL}}},
+        {3, "Source register (always a D register)", ALL},
+        {3, "Fixed", {4}},
+        {6, "Effective address, destination", ALL_MODES_EXCEPT(A | ImmSr)}}},
 };
 
 void make_opcode_table_range(const opcode_desc_t& desc, inst_func_ptr_t* table_ptr)
@@ -154,6 +189,8 @@ void make_opcode_table_range(const opcode_desc_t& desc, inst_func_ptr_t* table_p
         uint32_t bit_index;
         uint16_t value;
     };
+
+    std::unordered_map<inst_func_ptr_t, std::string> mnemonics;
 
     std::stack<item_t> items;
     items.push({ 0 });
@@ -166,8 +203,9 @@ void make_opcode_table_range(const opcode_desc_t& desc, inst_func_ptr_t* table_p
         if (item.part_index >= desc.parts.size())
         {
             IF_FALSE_THROW(item.bit_index == 16, "Invalid bit count in [" << desc.mnemonic << "] opcode description");
-            IF_FALSE_THROW(table_ptr[item.value] == nullptr, "Cannot assign opcode [" << desc.mnemonic << "] to table slot 0x" << std::hex << item.value << std::dec << " (" << std::bitset<16>(item.value) << ") since it has already been assigned");
+            IF_FALSE_THROW(table_ptr[item.value] == nullptr, "Cannot assign opcode [" << desc.mnemonic << "] to table slot 0x" << std::hex << item.value << std::dec << " (" << std::bitset<16>(item.value) << ") since the slot is already occupied by opcode [" << mnemonics[desc.func_ptr] << "]");
             table_ptr[item.value] = desc.func_ptr;
+            mnemonics[desc.func_ptr] = desc.mnemonic;
             continue;
         }
 

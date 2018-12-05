@@ -4,7 +4,7 @@
 #include <vector>
 #include "common.h"
 
-enum class sr
+enum class bit
 {
     carry = 0,
     overflow = 1,
@@ -17,7 +17,6 @@ enum class sr
 };
 
 class machine_state;
-
 typedef void(*inst_func_ptr_t)(machine_state&, uint16_t);
 
 class machine_state
@@ -47,7 +46,7 @@ private:
         // Note: Adress register 7 is special: It refers to the user *or* supervisor stack pointer, depending on the current CPU mode
         if (reg == 7)
         {
-            return (T*)(get_status_register<sr::mode>() ? &m_registers.SSP : &m_registers.USP);
+            return (T*)(get_status_register<bit::mode>() ? &m_registers.SSP : &m_registers.USP);
         }
         else
         {
@@ -86,13 +85,13 @@ public:
         }
     }
 
-    template <const sr bit>
+    template <const bit bit>
     inline bool get_status_register()
     {
         return ((m_registers.SR >> uint32_t(bit)) & 0x1) != 0;
     }
 
-    template <const sr bit>
+    template <const bit bit>
     inline void set_status_register(bool value)
     {
         uint16_t mask = 1 << uint32_t(bit);
@@ -106,7 +105,15 @@ public:
         }
     }
 
-    template <typename T, const bool immediate = true>
+    template <typename T, const bool use_imm = true>
+    inline T* get_pointer(uint32_t effective_address)
+    {
+        auto reg = (effective_address & 0x7);
+        auto mode = (effective_address >> 3) & 0x7;
+        return get_pointer<T, use_imm >(mode, reg);
+    }
+
+    template <typename T, const bool use_imm = true>
     inline T* get_pointer(uint32_t mode, uint32_t reg)
     {
         switch (mode)
@@ -148,7 +155,7 @@ public:
                 THROW("Unimplemented addressing mode: " << mode);
 
             case 4: // Immediate or status register
-                if (immediate)
+                if (use_imm)
                 {
                     typedef traits<T>::extension_word_type_t extension_t;
                     m_imm_storage = next<extension_t>();

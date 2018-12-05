@@ -15,5 +15,8 @@ void inst_eori(machine_state& state, uint16_t opcode);
 void inst_subi(machine_state& state, uint16_t opcode);
 void inst_addi(machine_state& state, uint16_t opcode);
 void inst_cmpi(machine_state& state, uint16_t opcode);
-void inst_btst_bit_index_imm(machine_state& state, uint16_t opcode);
-void inst_btst_bit_index_data_reg(machine_state& state, uint16_t opcode);
+void inst_btst(machine_state& state, uint16_t opcode);
+void inst_bset(machine_state& state, uint16_t opcode);
+void inst_bclr(machine_state& state, uint16_t opcode);
+void inst_bchg(machine_state& state, uint16_t opcode);
+

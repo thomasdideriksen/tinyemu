@@ -46,14 +46,10 @@ inline uint16_t extract_bits(uint16_t src)
 }
 
 template <typename T>
-inline uint32_t sign_extend(const T& value, bool* is_negative = nullptr)
+inline uint32_t sign_extend(const T& value)
 {
     typedef traits<T>::signed_type_t signed_t;
     signed_t* ptr = (signed_t*)&value;
-    if (is_negative)
-    {
-        *is_negative = (*ptr) < 0;
-    }
     return uint32_t(*ptr);
 }
 
@@ -75,4 +71,12 @@ template <typename T>
 inline bool has_carry(T higher_precision_result)
 {
     return ((higher_precision_result >> (sizeof(T) * 4)) & 0x1) != 0;
+}
+
+template <typename T>
+inline bool has_overflow(T op0, T op1, T result)
+{
+    bool op0_negative = is_negative(op0);
+    bool op1_negative = is_negative(op1);
+    return (op0_negative == op1_negative) ? op0_negative != is_negative(result) : false;
 }

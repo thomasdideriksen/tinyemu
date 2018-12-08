@@ -105,13 +105,13 @@ public:
         }
     }
 
-    template <typename T, const bool use_imm = true>
-    inline T* get_pointer(uint32_t effective_address)
-    {
-        auto reg = (effective_address & 0x7);
-        auto mode = (effective_address >> 3) & 0x7;
-        return get_pointer<T, use_imm >(mode, reg);
-    }
+    //template <typename T, const bool use_imm = true>
+    //inline T* get_pointer(uint32_t effective_address)
+    //{
+    //    auto reg = (effective_address & 0x7);
+    //    auto mode = (effective_address >> 3) & 0x7;
+    //    return get_pointer<T, use_imm >(mode, reg);
+    //}
 
     template <typename T, const bool use_imm = true>
     inline T* get_pointer(uint32_t mode, uint32_t reg)

@@ -174,6 +174,10 @@ void inst_add(machine_state& state, uint16_t opcode)
 }
 
 //
+// AND, EOR, OR
+//
+
+//
 // AND
 //
 
@@ -197,15 +201,11 @@ inline void inst_and_helper(machine_state& state, uint16_t opcode)
     default:
         THROW("Invalid direction");
     }
-
-    //bool carry = ((result_high_precision >> traits<T>::bits) & 0x1) != 0;
-    //bool negative = is_negative(result);
-
-    //state.set_ccr_bit<ccr_bit::extend>(carry);
-    //state.set_ccr_bit<ccr_bit::negative>(negative);
-    //state.set_ccr_bit<ccr_bit::zero>(result == 0);
-    ////state.set_ccr_bit<ccr_bit::overflow>(); <--- TODO
-    //state.set_ccr_bit<ccr_bit::carry>(carry);
+    
+    state.set_status_register<bit::negative>(most_significant_bit(result));
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(false);
+    state.set_status_register<bit::carry>(false);
 }
 
 void inst_and(machine_state& state, uint16_t opcode)

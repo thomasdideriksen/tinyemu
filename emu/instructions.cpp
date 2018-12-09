@@ -31,12 +31,12 @@ inline void inst_move_helper(machine_state& state, uint16_t opcode)
     T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
     T* dst_ptr = state.get_pointer<T>(dst_mode, dst_reg);
 
-    state.write<T>(dst_ptr, *src_ptr);
-
-    state.set_status_register<bit::negative>(is_negative(*dst_ptr));
-    state.set_status_register<bit::zero>(*dst_ptr == 0);
+    state.set_status_register<bit::negative>(is_negative(*src_ptr));
+    state.set_status_register<bit::zero>(*src_ptr == 0);
     state.set_status_register<bit::overflow>(false);
     state.set_status_register<bit::carry>(false);
+
+    state.write(dst_ptr, *src_ptr);
 }
 
 void inst_move(machine_state& state, uint16_t opcode)
@@ -83,12 +83,13 @@ void inst_clr_helper(machine_state& state, uint16_t opcode)
     auto reg = extract_bits<13, 3>(opcode);
 
     T* ptr = state.get_pointer<T>(mode, reg);
-    state.write<T>(ptr, 0x0);
 
     state.set_status_register<bit::negative>(false);
     state.set_status_register<bit::zero>(true);
     state.set_status_register<bit::overflow>(false);
     state.set_status_register<bit::carry>(false);
+
+    state.write(ptr, T(0x0));
 }
 
 void inst_clr(machine_state& state, uint16_t opcode)
@@ -153,19 +154,19 @@ inline void inst_add_helper(machine_state& state, uint16_t opcode)
     bool overflow = has_overflow<T>(*src_ptr, *dst_ptr, result);
     bool carry = has_carry(result_high_precision);
 
-    switch (direction)
-    {
-    case 0: state.write<T>(dst_ptr, T(result)); break; // Write to 'dst'
-    case 1: state.write<T>(src_ptr, T(result)); break; // Write to 'src'
-    default:
-        THROW("Invalid direction");
-    }
-
     state.set_status_register<bit::extend>(carry);
     state.set_status_register<bit::negative>(negative);
     state.set_status_register<bit::zero>(result == 0);
     state.set_status_register<bit::overflow>(overflow);
     state.set_status_register<bit::carry>(carry);
+
+    switch (direction)
+    {
+    case 0: state.write(dst_ptr, result); break; // Write to 'dst'
+    case 1: state.write(src_ptr, result); break; // Write to 'src'
+    default:
+        THROW("Invalid direction");
+    }
 }
 
 void inst_add(machine_state& state, uint16_t opcode)
@@ -195,18 +196,18 @@ inline void inst_logical_helper(machine_state& state, uint16_t opcode)
 
     T result = O::template execute(*src_ptr, *dst_ptr);
 
-    switch (direction)
-    {
-    case 0: state.write<T>(dst_ptr, T(result)); break; // Write to 'dst'
-    case 1: state.write<T>(src_ptr, T(result)); break; // Write to 'src'
-    default:
-        THROW("Invalid direction");
-    }
-
     state.set_status_register<bit::negative>(most_significant_bit(result));
     state.set_status_register<bit::zero>(result == 0);
     state.set_status_register<bit::overflow>(false);
     state.set_status_register<bit::carry>(false);
+
+    switch (direction)
+    {
+    case 0: state.write(dst_ptr, result); break; // Write to 'dst'
+    case 1: state.write(src_ptr, result); break; // Write to 'src'
+    default:
+        THROW("Invalid direction");
+    }
 }
 
 //
@@ -253,13 +254,13 @@ void inst_logical_imm_helper(machine_state& state, uint16_t opcode)
     typedef traits<T>::extension_word_type_t extension_t;
     auto imm = state.next<extension_t>();
 
-    T result = O::template execute<T>(*dst_ptr, T(imm));
-    state.write<T>(dst_ptr, result);
-
-    state.set_status_register<bit::negative>(most_significant_bit(*dst_ptr));
-    state.set_status_register<bit::zero>(*dst_ptr == 0);
+    state.set_status_register<bit::negative>(most_significant_bit(result));
+    state.set_status_register<bit::zero>(result == 0);
     state.set_status_register<bit::overflow>(false);
     state.set_status_register<bit::carry>(false);
+
+    T result = O::template execute<T>(*dst_ptr, T(imm));
+    state.write(dst_ptr, result);
 }
 
 //
@@ -318,16 +319,17 @@ void inst_arithmetic_imm_helper(machine_state& state, uint16_t opcode)
             high_precision_t(imm));
 
     T result = T(result_high_precision & high_precision_t(traits<T>::max));
-    state.write<T>(dst_ptr, result);
 
     bool carry = has_carry(result_high_precision);
     bool overflow = has_overflow<T>(*dst_ptr, T(imm), result);
 
     state.set_status_register<bit::extend>(carry);
-    state.set_status_register<bit::negative>(is_negative(*dst_ptr));
-    state.set_status_register<bit::zero>(*dst_ptr == 0);
+    state.set_status_register<bit::negative>(is_negative(result));
+    state.set_status_register<bit::zero>(result == 0);
     state.set_status_register<bit::overflow>(overflow);
     state.set_status_register<bit::carry>(carry);
+
+    state.write(dst_ptr, result);
 }
 
 //
@@ -420,11 +422,11 @@ inline void inst_bitop_helper(machine_state& state, uint16_t opcode)
     }
 
     uint32_t* dst_ptr = state.get_pointer<uint32_t>(dst_mode, dst_reg);
-    
-    const uint32_t mask = (1 << bit_index);
-    state.set_status_register<bit::zero>(((*dst_ptr) & mask) == 0);
-
     auto result = O::template execute(*dst_ptr, bit_index);
+
+    const uint32_t mask = (1 << bit_index);
+    state.set_status_register<bit::zero>((result & mask) == 0);
+
     state.write(dst_ptr, result);
 }
 
@@ -518,8 +520,6 @@ inline void inst_addq_helper(machine_state& state, uint16_t opcode)
     high_precision_t result_high_precision = high_precision_t(*ptr) + high_precision_t(data);
     T result = T(result_high_precision & high_precision_t(traits<T>::max));
 
-    state.write<T>(ptr, result);
-
     bool carry = has_carry(result_high_precision);
     bool overflow = has_overflow(*ptr, T(data), result);
     bool negative = is_negative(result);
@@ -530,6 +530,7 @@ inline void inst_addq_helper(machine_state& state, uint16_t opcode)
     state.set_status_register<bit::overflow>(overflow);
     state.set_status_register<bit::carry>(carry);
 
+    state.write(ptr, result);
 }
 
 void inst_addq(machine_state& state, uint16_t opcode)

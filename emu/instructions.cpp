@@ -556,3 +556,49 @@ void inst_subq(machine_state& state, uint16_t opcode)
     auto size = extract_bits<8, 2>(opcode);
     PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_arithmetic_quick_helper, operation_sub);
 }
+
+//
+// RTE
+//
+
+void inst_rte(machine_state& state, uint16_t opcode)
+{
+    state.pop_status_register();
+    state.pop_program_counter();
+}
+
+//
+// Helper: TRAP, TRAPV
+//
+
+inline void inst_trap_helper(machine_state& state, uint32_t vector_index)
+{
+    state.push_program_counter();
+    state.push_status_register();
+    state.set_status_register<bit::supervisor>(true);
+    auto vector = state.get_vector(vector_index);
+    state.set_program_counter(vector);
+}
+
+//
+// TRAP
+//
+
+void inst_trap(machine_state& state, uint16_t opcode)
+{
+    auto vector = extract_bits<12, 4>(opcode);
+    inst_trap_helper(state, 32 + vector); // Note: Software traps are using entry 32 - 47 in the vector table
+}
+
+//
+// TRAPV
+//
+
+void inst_trapv(machine_state& state, uint16_t opcode)
+{
+    if (state.get_status_register<bit::overflow>())
+    {
+        inst_trap_helper(state, 7);
+    }
+}
+

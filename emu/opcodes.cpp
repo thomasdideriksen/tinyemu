@@ -145,9 +145,6 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
         {6, "Effective address, source", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
 
-    {"RTE", inst_unimplemented, {
-        {16, "Fixed", {0x4e73}}}},
-
     {"MOVEP", inst_unimplemented, {
         {4, "Fixed", {0}},
         {3, "Destination Register (always a D register)", ALL},
@@ -226,6 +223,16 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {1, "Fixed", {1}},
         {2, "Size",  {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
         {6, "Effective address, destination", ALL_MODES_EXCEPT(PcD | PcI | ImmSr)}}},
+
+    {"TRAPV", inst_trapv, {
+        {16, "Fixed", {0x4e76}}}},
+
+    {"TRAP", inst_trap, {
+        {12, "Fixed", {0x4e4}},
+        {4, "Vector", ALL}}},
+
+    {"RTE", inst_rte, {
+        {16, "Fixed", {0x4e73}}}},
 };
 
 void make_opcode_table_range(

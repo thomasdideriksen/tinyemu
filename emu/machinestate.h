@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include <iostream>
 #include "common.h"
 
 enum class bit
@@ -11,7 +12,7 @@ enum class bit
     zero = 2,
     negative = 3,
     extend = 4,
-    mode = 13,
+    supervisor = 13,
     trace = 15,
     // Note: Interrupt mask is bit 8, 9 and 10
 };
@@ -47,7 +48,7 @@ private:
         // Note: Adress register 7 is special: It refers to the user *or* supervisor stack pointer, depending on the current CPU mode
         if (reg == 7)
         {
-            return (T*)(get_status_register<bit::mode>() ? &m_registers.SSP : &m_registers.USP);
+            return (T*)(get_status_register<bit::supervisor>() ? &m_registers.SSP : &m_registers.USP);
         }
         else
         {
@@ -63,6 +64,27 @@ public:
     void set_program_counter(uint32_t value);
     void push_program_counter();
     void pop_program_counter();
+    void push_status_register();
+    void pop_status_register();
+    uint32_t get_vector(uint32_t vector);
+
+    template <typename T>
+    inline void push(T value)
+    {
+        uint32_t* stack = get_pointer<uint32_t>(1, 7);
+        write<uint32_t>(stack, *stack - sizeof(T));
+        IF_FALSE_THROW(*stack >= 0, "Stack overflow");
+        write<T>((T*)&m_memory[*stack], value);
+    }
+
+    template <typename T>
+    inline T pop()
+    {
+        uint32_t* stack = get_pointer<uint32_t>(1, 7);
+        T result = *((T*)&m_memory[*stack]);
+        write<uint32_t>(stack, *stack + sizeof(T));
+        return result;
+    }
     
     template <typename T>
     inline void write(T* dst, T value)
@@ -70,6 +92,8 @@ public:
         *dst = value;
         if ((uint8_t*)dst >= m_memory && (uint8_t*)dst < (m_memory + m_memory_size))
         {
+            size_t offset = size_t(dst) - size_t(m_memory);
+            std::cout << "Memory write: MEM[0x" << std::hex << offset << "] <- 0x" << std::hex << value << " (MEM[" << std::dec << offset << "] <- " << std::dec << value << ")" << std::endl;
             // TODO: Callback for memory mapped stuff
         }
     }

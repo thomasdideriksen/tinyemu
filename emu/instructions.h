@@ -36,6 +36,13 @@ void inst_jsr(machine_state& state, uint16_t opcode);
 void inst_rts(machine_state& state, uint16_t opcode);
 
 //
+// Exceptions
+//
+void inst_trap(machine_state& state, uint16_t opcode);
+void inst_trapv(machine_state& state, uint16_t opcode);
+void inst_rte(machine_state& state, uint16_t opcode);
+
+//
 // Miscellaneous 
 //
 void inst_clr(machine_state& state, uint16_t opcode);

@@ -219,6 +219,13 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {1, "Fixed", {0}},
         {2, "Size",  {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
         {6, "Effective address, destination", ALL_MODES_EXCEPT(PcD | PcI | ImmSr)}}},
+
+    {"SUBQ", inst_subq, {
+        {4, "Fixed", {0x5}},
+        {3, "Data", ALL},
+        {1, "Fixed", {1}},
+        {2, "Size",  {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
+        {6, "Effective address, destination", ALL_MODES_EXCEPT(PcD | PcI | ImmSr)}}},
 };
 
 void make_opcode_table_range(

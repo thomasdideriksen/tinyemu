@@ -26,6 +26,7 @@ void inst_add(machine_state& state, uint16_t opcode);
 void inst_subi(machine_state& state, uint16_t opcode);
 void inst_addi(machine_state& state, uint16_t opcode);
 void inst_addq(machine_state& state, uint16_t opcode);
+void inst_subq(machine_state& state, uint16_t opcode);
 
 //
 // Branch/jump

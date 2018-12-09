@@ -176,7 +176,7 @@ void inst_add(machine_state& state, uint16_t opcode)
 }
 
 //
-// AND, EOR, OR
+// Helper: AND, EOR, OR
 //
 
 struct operation_or { template <typename T> static T execute(T a, T b) { return a | b; } };
@@ -241,7 +241,7 @@ void inst_or(machine_state& state, uint16_t opcode)
 }
 
 //
-// ORI, ANDI, EORI
+// Helper: ORI, ANDI, EORI
 //
 
 template <typename T, typename O>
@@ -295,7 +295,7 @@ void inst_eori(machine_state& state, uint16_t opcode)
 }
 
 //
-// SUBI, ADDI
+// Helper: SUBI, ADDI
 //
 
 struct operation_sub { template <typename T> static T execute(T a, T b) { return a - b; } };
@@ -387,7 +387,7 @@ void inst_cmpi(machine_state& state, uint16_t opcode)
 }
 
 //
-// BTST, BCHG, BCLR, BSET
+// Helper: BTST, BCHG, BCLR, BSET
 //
 
 struct operation_btst { static uint32_t execute(uint32_t val, uint32_t bit_index) { return val; } };
@@ -504,11 +504,11 @@ void inst_rts(machine_state& state, uint16_t opcode)
 }
 
 //
-// ADDQ
+// Helper: ADDQ, SUBQ
 //
 
-template <typename T>
-inline void inst_addq_helper(machine_state& state, uint16_t opcode)
+template <typename T, typename O>
+inline void inst_arithmetic_quick_helper(machine_state& state, uint16_t opcode)
 {
     auto data = extract_bits<4, 3>(opcode);
     auto mode = extract_bits<10, 3>(opcode);
@@ -518,7 +518,10 @@ inline void inst_addq_helper(machine_state& state, uint16_t opcode)
 
     typedef traits<T>::higher_precision_type_t high_precision_t;
 
-    high_precision_t result_high_precision = high_precision_t(*ptr) + high_precision_t(data);
+    high_precision_t result_high_precision = O::template execute(
+        high_precision_t(*ptr), 
+        high_precision_t(data));
+
     T result = T(result_high_precision & high_precision_t(traits<T>::max));
 
     bool carry = has_carry(result_high_precision);
@@ -534,8 +537,22 @@ inline void inst_addq_helper(machine_state& state, uint16_t opcode)
     state.write(ptr, result);
 }
 
+//
+// ADDQ
+//
+
 void inst_addq(machine_state& state, uint16_t opcode)
 {
     auto size = extract_bits<8, 2>(opcode);
-    PROCESS_SIZE(size, inst_addq_helper);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_arithmetic_quick_helper, operation_add);
+}
+
+//
+// SUBQ
+//
+
+void inst_subq(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_arithmetic_quick_helper, operation_sub);
 }

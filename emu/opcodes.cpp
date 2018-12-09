@@ -2,6 +2,7 @@
 #include <stack>
 #include <bitset>
 #include <unordered_map>
+#include <iostream>
 #include "opcodes.h"
 #include "common.h"
 #include "instructions.h"
@@ -135,8 +136,15 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {3, "Destination Register (always a D register)", ALL},
         {1, "Direction", {0 /* Write to dst (D register) */, 1 /* Write to src (ea) */}},
         {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
-        {6, "Effective address, source", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}} },
+        {6, "Effective address, source", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
     
+    {"OR", inst_or, {
+        {4, "Fixed", {0x8}},
+        {3, "Destination Register (always a D register)", ALL},
+        {1, "Direction", {0 /* Write to dst (D register) */, 1 /* Write to src (ea) */}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
+        {6, "Effective address, source", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
+
     {"RTE", inst_unimplemented, {
         {16, "Fixed", {0x4e73}}}},
 
@@ -193,6 +201,17 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {3, "Source register (always a D register)", ALL},
         {3, "Fixed", {4}},
         {6, "Effective address, destination", ALL_MODES_EXCEPT(A | ImmSr)}}},
+
+    {"JMP", inst_jmp, {
+        {10, "Fixed", {0x13b}},
+        {6, "Effective address, source", ALL_MODES_EXCEPT(D | A | AiPd | AiPi | ImmSr)}}},
+
+    { "ADDQ", inst_addq, {
+        {4, "Fixed", {0x5}},
+        {3, "Data", ALL},
+        {1, "Fixed", {0}},
+        {2, "Size",  {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
+        {6, "Effective address, destination", ALL_MODES_EXCEPT(PcD | PcI | ImmSr)}}},
 };
 
 void make_opcode_table_range(
@@ -260,4 +279,11 @@ void make_opcode_table(std::vector<inst_func_ptr_t>& table)
     {
         make_opcode_table_range(desc, mnemonics, table_ptr);
     }
+
+    int set_count = 0;
+    for (size_t i = 0; i < table.size(); i++)
+    {
+        set_count += (table[i] != nullptr) ? 1 : 0;
+    }
+    std::cout << "Opcode table occupancy rate: " << set_count << " of " << table.size() << std::endl;
 }

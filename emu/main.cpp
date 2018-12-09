@@ -79,7 +79,7 @@ int main(void)
             void* buffer = ::malloc(size);
             ::fread(buffer, size, 1, fp);
             ::fclose(fp);
-            machine.load_program(0, buffer, size, 0);
+            machine.load_program(0x1000, buffer, size, 0x1000);
             ::free(buffer);
 
             while (true)

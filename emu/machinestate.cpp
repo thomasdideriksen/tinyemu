@@ -7,11 +7,13 @@
 #include "opcodes.h"
 
 machine_state::machine_state()
+    : m_storage_index(0)
 {
     m_memory_size = size_t(std::pow(int32_t(2), int32_t(24)));
     m_memory = (uint8_t*)::malloc(m_memory_size);
     IF_FALSE_THROW(m_memory != nullptr, "Allocation failed");
     ::memset(&m_registers, 0x0, sizeof(m_registers));
+    ::memset(m_storage, 0x0, sizeof(m_storage));
 
     make_opcode_table(m_opcode_table);
 }
@@ -37,4 +39,9 @@ void machine_state::tick()
     auto inst_func = m_opcode_table[opcode];
     IF_FALSE_THROW(inst_func != nullptr, "Invalid or unimplemented opcode: 0x" << std::hex << opcode << std::dec << " (" << std::bitset<16>(opcode) << ")");
     inst_func(*this, opcode);
+}
+
+void machine_state::set_program_counter(uint32_t value)
+{
+    m_registers.PC = value;
 }

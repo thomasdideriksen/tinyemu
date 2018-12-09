@@ -177,12 +177,12 @@ void inst_add(machine_state& state, uint16_t opcode)
 // AND, EOR, OR
 //
 
-//
-// AND
-//
+struct operation_or { template <typename T> static T execute(T a, T b) { return a | b; } };
+struct operation_and { template <typename T> static T execute(T a, T b) { return a & b; } };
+struct operation_eor { template <typename T> static T execute(T a, T b) { return a ^ b; } };
 
-template <typename T>
-inline void inst_and_helper(machine_state& state, uint16_t opcode)
+template <typename T, typename O>
+inline void inst_logical_helper(machine_state& state, uint16_t opcode)
 {
     auto dst_reg = extract_bits<4, 3>(opcode);
     auto direction = extract_bits<7, 1>(opcode);
@@ -192,7 +192,7 @@ inline void inst_and_helper(machine_state& state, uint16_t opcode)
     T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
     T* dst_ptr = state.get_pointer<T>(0 /* Always "data register direct" mode */, dst_reg);
 
-    T result = (*src_ptr) & (*dst_ptr);
+    T result = O::template execute(*src_ptr, *dst_ptr);
 
     switch (direction)
     {
@@ -201,46 +201,46 @@ inline void inst_and_helper(machine_state& state, uint16_t opcode)
     default:
         THROW("Invalid direction");
     }
-    
+
     state.set_status_register<bit::negative>(most_significant_bit(result));
     state.set_status_register<bit::zero>(result == 0);
     state.set_status_register<bit::overflow>(false);
     state.set_status_register<bit::carry>(false);
 }
 
+//
+// AND
+//
+
 void inst_and(machine_state& state, uint16_t opcode)
 {
     auto size = extract_bits<8, 2>(opcode);
-    PROCESS_SIZE(size, inst_and_helper);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_logical_helper, operation_and);
 }
 
 //
 // EOR
 //
 
-template <typename T>
-void inst_eor_helper(machine_state& state, uint16_t opcode)
-{
-
-}
-
 void inst_eor(machine_state& state, uint16_t opcode)
 {
-    auto dst_reg = extract_bits<4, 3>(opcode);
-    auto direction = extract_bits<7, 1>(opcode);
-    auto src_mode = extract_bits<10, 3>(opcode);
-    auto src_reg = extract_bits<13, 3>(opcode);
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_logical_helper, operation_eor);
+}
 
-    THROW("Not implemented");
+//
+// OR
+//
+
+void inst_or(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_logical_helper, operation_or);
 }
 
 //
 // ORI, ANDI, EORI
 //
-
-struct operation_or { template <typename T> static T execute(T a, T b) { return a | b; } };
-struct operation_and { template <typename T> static T execute(T a, T b) { return a & b; } };
-struct operation_eor { template <typename T> static T execute(T a, T b) { return a ^ b; } };
 
 template <typename T, typename O>
 void inst_logical_imm_helper(machine_state& state, uint16_t opcode)
@@ -423,7 +423,7 @@ inline void inst_bitop_helper(machine_state& state, uint16_t opcode)
     const uint32_t mask = (1 << bit_index);
     state.set_status_register<bit::zero>(((*dst_ptr) & mask) == 0);
 
-    O::template execute(dst_ptr, bit_index);
+    O::template execute(dst_ptr, bit_index); // TODO: Use write
 }
 
 //
@@ -460,4 +460,55 @@ void inst_bclr(machine_state& state, uint16_t opcode)
 void inst_bchg(machine_state& state, uint16_t opcode)
 {
     inst_bitop_helper<operation_bchg>(state, opcode);
+}
+
+//
+// JMP
+//
+
+void inst_jmp(machine_state& state, uint16_t opcode)
+{
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+
+    uint32_t* ptr = state.get_pointer<uint32_t>(mode, reg);
+    state.set_program_counter(*ptr);
+}
+
+//
+// ADDQ
+//
+
+template <typename T>
+inline void inst_addq_helper(machine_state& state, uint16_t opcode)
+{
+    auto data = extract_bits<4, 3>(opcode);
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+
+    T* ptr = state.get_pointer<T>(mode, reg);
+
+    typedef traits<T>::higher_precision_type_t high_precision_t;
+
+    high_precision_t result_high_precision = high_precision_t(*ptr) + high_precision_t(data);
+    T result = T(result_high_precision & high_precision_t(traits<T>::max));
+
+    state.write<T>(ptr, result);
+
+    bool carry = has_carry(result_high_precision);
+    bool overflow = has_overflow(*ptr, T(data), result);
+    bool negative = is_negative(result);
+
+    state.set_status_register<bit::extend>(carry);
+    state.set_status_register<bit::negative>(negative);
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(overflow);
+    state.set_status_register<bit::carry>(carry);
+
+}
+
+void inst_addq(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE(size, inst_addq_helper);
 }

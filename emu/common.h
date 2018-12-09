@@ -5,6 +5,7 @@
 
 #define THROW(msg) { std::stringstream __stream; __stream << __FILE__ << ":" << __LINE__ << ": " << msg; throw std::runtime_error(__stream.str()); }
 #define IF_FALSE_THROW(expr, msg) { if (!(expr)) { THROW(msg); } }
+#define countof(arr) (sizeof(arr) / sizeof(arr[0]))
 
 template <typename T>
 struct traits {};

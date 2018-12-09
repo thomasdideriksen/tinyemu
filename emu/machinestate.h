@@ -38,7 +38,8 @@ private:
     uint8_t* m_memory;
     size_t m_memory_size;
     std::vector<inst_func_ptr_t> m_opcode_table;
-    uint32_t m_imm_storage;
+    uint32_t m_storage[4];
+    uint32_t m_storage_index;
 
     template <typename T>
     inline T* get_address_register_pointer(uint32_t reg)
@@ -59,6 +60,7 @@ public:
     virtual ~machine_state();
     void load_program(size_t memory_offset, void* program, size_t program_size, uint32_t init_pc);
     void tick();
+    void set_program_counter(uint32_t value);
     
     template <typename T>
     inline void write(T* dst, T value)
@@ -105,13 +107,13 @@ public:
         }
     }
 
-    //template <typename T, const bool use_imm = true>
-    //inline T* get_pointer(uint32_t effective_address)
-    //{
-    //    auto reg = (effective_address & 0x7);
-    //    auto mode = (effective_address >> 3) & 0x7;
-    //    return get_pointer<T, use_imm >(mode, reg);
-    //}
+    template <typename T>
+    inline T* get_next_storage_pointer()
+    {
+        T* ptr = (T*)&m_storage[m_storage_index % countof(m_storage)];
+        m_storage_index++;
+        return ptr;
+    }
 
     template <typename T, const bool use_imm = true>
     inline T* get_pointer(uint32_t mode, uint32_t reg)
@@ -143,8 +145,13 @@ public:
             switch (reg)
             {
             case 0: // Absolute short
-                THROW("Unimplemented addressing mode: " << mode);
-
+            {
+                T* ptr = get_next_storage_pointer<T>();
+                uint16_t result = next<uint16_t>();
+                *ptr = (T)result;
+                return ptr;
+            }
+                
             case 1: // Absolute long
                 THROW("Unimplemented addressing mode: " << mode);
 
@@ -158,8 +165,9 @@ public:
                 if (use_imm)
                 {
                     typedef traits<T>::extension_word_type_t extension_t;
-                    m_imm_storage = next<extension_t>();
-                    return (T*)&m_imm_storage;
+                    extension_t* ptr = get_next_storage_pointer<extension_t>();
+                    *ptr = next<extension_t>();
+                    return (T*)ptr;
                 }
                 else
                 {

@@ -397,7 +397,7 @@ inline void inst_bitop_helper(machine_state& state, uint16_t opcode)
     auto src_reg = extract_bits<4, 3>(opcode);
     auto bit_index_src = extract_bits<7, 1>(opcode);
     auto dst_mode = extract_bits<10, 3>(opcode);
-    auto dst_reg = extract_bits<13, 3>(opcode);    
+    auto dst_reg = extract_bits<13, 3>(opcode);
 
     uint32_t bit_index = 0;
     if (bit_index_src == 0)

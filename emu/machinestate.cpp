@@ -50,6 +50,7 @@ void machine_state::push_program_counter()
 {
     uint32_t* stack = get_pointer<uint32_t>(1, 7);
     *stack -= sizeof(uint32_t);
+    IF_FALSE_THROW(*stack >= 0, "Stack overflow");
     *((uint32_t*)&m_memory[*stack]) = m_registers.PC;
 }
 

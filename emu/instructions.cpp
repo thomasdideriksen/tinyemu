@@ -254,12 +254,13 @@ void inst_logical_imm_helper(machine_state& state, uint16_t opcode)
     typedef traits<T>::extension_word_type_t extension_t;
     auto imm = state.next<extension_t>();
 
+    T result = O::template execute<T>(*dst_ptr, T(imm));
+
     state.set_status_register<bit::negative>(most_significant_bit(result));
     state.set_status_register<bit::zero>(result == 0);
     state.set_status_register<bit::overflow>(false);
     state.set_status_register<bit::carry>(false);
 
-    T result = O::template execute<T>(*dst_ptr, T(imm));
     state.write(dst_ptr, result);
 }
 

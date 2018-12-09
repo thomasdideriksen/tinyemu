@@ -45,3 +45,17 @@ void machine_state::set_program_counter(uint32_t value)
 {
     m_registers.PC = value;
 }
+
+void machine_state::push_program_counter()
+{
+    uint32_t* stack = get_pointer<uint32_t>(1, 7);
+    *stack -= sizeof(uint32_t);
+    *((uint32_t*)&m_memory[*stack]) = m_registers.PC;
+}
+
+void machine_state::pop_program_counter()
+{
+    uint32_t* stack = get_pointer<uint32_t>(1, 7);
+    m_registers.PC = *((uint32_t*)&m_memory[*stack]);
+    *stack += sizeof(uint32_t);
+}

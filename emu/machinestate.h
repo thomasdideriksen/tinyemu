@@ -61,6 +61,8 @@ public:
     void load_program(size_t memory_offset, void* program, size_t program_size, uint32_t init_pc);
     void tick();
     void set_program_counter(uint32_t value);
+    void push_program_counter();
+    void pop_program_counter();
     
     template <typename T>
     inline void write(T* dst, T value)
@@ -146,14 +148,17 @@ public:
             {
             case 0: // Absolute short
             {
-                T* ptr = get_next_storage_pointer<T>();
-                uint16_t result = next<uint16_t>();
-                *ptr = (T)result;
-                return ptr;
+                uint16_t* ptr = get_next_storage_pointer<uint16_t>();
+                *ptr = next<uint16_t>();
+                return (T*)ptr;
             }
                 
             case 1: // Absolute long
-                THROW("Unimplemented addressing mode: " << mode);
+            {
+                uint32_t* ptr = get_next_storage_pointer<uint32_t>();
+                *ptr = next<uint32_t>();
+                return (T*)ptr;
+            }
 
             case 2: // Program counter with displacement
                 THROW("Unimplemented addressing mode: " << mode);

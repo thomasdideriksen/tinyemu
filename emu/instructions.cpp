@@ -386,10 +386,10 @@ void inst_cmpi(machine_state& state, uint16_t opcode)
 // BTST, BCHG, BCLR, BSET
 //
 
-struct operation_btst { static void execute(uint32_t* ptr, uint32_t bit_index) {} };
-struct operation_bchg { static void execute(uint32_t* ptr, uint32_t bit_index) { *ptr ^= (1 << bit_index); } };
-struct operation_bclr { static void execute(uint32_t* ptr, uint32_t bit_index) { *ptr &= ~(1 << bit_index); } };
-struct operation_bset { static void execute(uint32_t* ptr, uint32_t bit_index) { *ptr |= (1 << bit_index); } };
+struct operation_btst { static uint32_t execute(uint32_t val, uint32_t bit_index) { return val; } };
+struct operation_bchg { static uint32_t execute(uint32_t val, uint32_t bit_index) { return val ^ (1 << bit_index); } };
+struct operation_bclr { static uint32_t execute(uint32_t val, uint32_t bit_index) { return val & (~(1 << bit_index)); } };
+struct operation_bset { static uint32_t execute(uint32_t val, uint32_t bit_index) { return val | (1 << bit_index); } };
 
 template <typename O>
 inline void inst_bitop_helper(machine_state& state, uint16_t opcode)
@@ -423,7 +423,8 @@ inline void inst_bitop_helper(machine_state& state, uint16_t opcode)
     const uint32_t mask = (1 << bit_index);
     state.set_status_register<bit::zero>(((*dst_ptr) & mask) == 0);
 
-    O::template execute(dst_ptr, bit_index); // TODO: Use write
+    auto result = O::template execute(*dst_ptr, bit_index);
+    state.write(dst_ptr, result);
 }
 
 //
@@ -471,8 +472,31 @@ void inst_jmp(machine_state& state, uint16_t opcode)
     auto mode = extract_bits<10, 3>(opcode);
     auto reg = extract_bits<13, 3>(opcode);
 
-    uint32_t* ptr = state.get_pointer<uint32_t>(mode, reg);
-    state.set_program_counter(*ptr);
+    uint32_t* jump_to = state.get_pointer<uint32_t>(mode, reg);
+    state.set_program_counter(*jump_to);
+}
+
+//
+// JSR
+//
+
+void inst_jsr(machine_state& state, uint16_t opcode)
+{
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+
+    uint32_t* jump_to = state.get_pointer<uint32_t>(mode, reg);
+    
+    state.push_program_counter();
+    state.set_program_counter(*jump_to);
+}
+
+//
+// RTS
+//
+void inst_rts(machine_state& state, uint16_t opcode)
+{
+    state.pop_program_counter();
 }
 
 //

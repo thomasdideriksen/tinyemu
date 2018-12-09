@@ -22,4 +22,5 @@ void inst_bclr(machine_state& state, uint16_t opcode);
 void inst_bchg(machine_state& state, uint16_t opcode);
 void inst_jmp(machine_state& state, uint16_t opcode);
 void inst_addq(machine_state& state, uint16_t opcode);
-
+void inst_jsr(machine_state& state, uint16_t opcode);
+void inst_rts(machine_state& state, uint16_t opcode);

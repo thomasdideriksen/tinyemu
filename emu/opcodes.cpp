@@ -206,7 +206,14 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {10, "Fixed", {0x13b}},
         {6, "Effective address, source", ALL_MODES_EXCEPT(D | A | AiPd | AiPi | ImmSr)}}},
 
-    { "ADDQ", inst_addq, {
+    {"JSR", inst_jsr, {
+        {10, "Fixed", {0x13a}},
+        {6, "Effective address, source", ALL_MODES_EXCEPT(D | A | AiPd | AiPi | ImmSr)}}},
+
+    {"RTS", inst_rts, {
+        {16, "Fixed", {0x4e75}}}},
+
+    {"ADDQ", inst_addq, {
         {4, "Fixed", {0x5}},
         {3, "Data", ALL},
         {1, "Fixed", {0}},

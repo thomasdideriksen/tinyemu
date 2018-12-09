@@ -63,12 +63,13 @@ void inst_moveq(machine_state& state, uint16_t opcode)
     uint32_t* dst_ptr = state.get_pointer<uint32_t>(0, dst_reg);
 
     auto result = sign_extend(data);
-    state.write(dst_ptr, result);
 
     state.set_status_register<bit::negative>(is_negative(result));
     state.set_status_register<bit::zero>(result == 0);
     state.set_status_register<bit::overflow>(false);
     state.set_status_register<bit::carry>(false);
+
+    state.write(dst_ptr, result);
 }
 
 //

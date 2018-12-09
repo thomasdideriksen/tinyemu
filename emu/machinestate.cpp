@@ -71,5 +71,5 @@ void machine_state::pop_status_register()
 uint32_t machine_state::get_vector(uint32_t vector_index)
 {
     uint32_t* vector_table = (uint32_t*)m_memory;
-    return vector_table[vector_index];
+    return read(vector_table + vector_index);
 }

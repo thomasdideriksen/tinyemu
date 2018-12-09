@@ -31,12 +31,14 @@ inline void inst_move_helper(machine_state& state, uint16_t opcode)
     T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
     T* dst_ptr = state.get_pointer<T>(dst_mode, dst_reg);
 
-    state.set_status_register<bit::negative>(is_negative(*src_ptr));
-    state.set_status_register<bit::zero>(*src_ptr == 0);
+    T src = state.read(src_ptr);
+
+    state.set_status_register<bit::negative>(is_negative(src));
+    state.set_status_register<bit::zero>(src == 0);
     state.set_status_register<bit::overflow>(false);
     state.set_status_register<bit::carry>(false);
-
-    state.write(dst_ptr, *src_ptr);
+    
+    state.write(dst_ptr, src);
 }
 
 void inst_move(machine_state& state, uint16_t opcode)
@@ -112,7 +114,8 @@ inline void inst_movea_helper(machine_state& state, uint16_t opcode)
     T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
     uint32_t* dst_ptr = state.get_pointer<uint32_t>(1 /* Always "address register direct" mode */, dst_reg);
 
-    state.write<uint32_t>(dst_ptr, sign_extend(*src_ptr));
+    T src = state.read(src_ptr);
+    state.write<uint32_t>(dst_ptr, sign_extend(src));
 }
 
 void inst_movea(machine_state& state, uint16_t opcode)
@@ -142,16 +145,19 @@ inline void inst_add_helper(machine_state& state, uint16_t opcode)
     T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
     T* dst_ptr = state.get_pointer<T>(0 /* Always "data register direct" mode */, dst_reg);
 
+    T src = state.read(src_ptr);
+    T dst = state.read(dst_ptr);
+
     typedef traits<T>::higher_precision_type_t high_precision_t;
 
     high_precision_t result_high_precision =
-        high_precision_t(*src_ptr) +
-        high_precision_t(*dst_ptr);
+        high_precision_t(src) +
+        high_precision_t(dst);
 
     T result = T(result_high_precision & high_precision_t(traits<T>::max));
 
     bool negative = is_negative(result);
-    bool overflow = has_overflow<T>(*src_ptr, *dst_ptr, result);
+    bool overflow = has_overflow<T>(src, dst, result);
     bool carry = has_carry(result_high_precision);
 
     state.set_status_register<bit::extend>(carry);
@@ -194,7 +200,10 @@ inline void inst_logical_helper(machine_state& state, uint16_t opcode)
     T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
     T* dst_ptr = state.get_pointer<T>(0 /* Always "data register direct" mode */, dst_reg);
 
-    T result = O::template execute(*src_ptr, *dst_ptr);
+    T src = state.read(src_ptr);
+    T dst = state.read(dst_ptr);
+
+    T result = O::template execute(src, dst);
 
     state.set_status_register<bit::negative>(most_significant_bit(result));
     state.set_status_register<bit::zero>(result == 0);
@@ -251,10 +260,12 @@ void inst_logical_imm_helper(machine_state& state, uint16_t opcode)
     auto reg = extract_bits<13, 3>(opcode);
     T* dst_ptr = state.get_pointer<T, false /* Choose status register over immediate */>(mode, reg);
 
+    T dst = state.read(dst_ptr);
+
     typedef traits<T>::extension_word_type_t extension_t;
     auto imm = state.next<extension_t>();
 
-    T result = O::template execute<T>(*dst_ptr, T(imm));
+    T result = O::template execute<T>(dst, T(imm));
 
     state.set_status_register<bit::negative>(most_significant_bit(result));
     state.set_status_register<bit::zero>(result == 0);
@@ -308,6 +319,7 @@ void inst_arithmetic_imm_helper(machine_state& state, uint16_t opcode)
     auto reg = extract_bits<13, 3>(opcode);
 
     T* dst_ptr = state.get_pointer<T>(mode, reg);
+    T dst = state.read(dst_ptr);
 
     typedef traits<T>::extension_word_type_t extension_t;
     auto imm = state.next<extension_t>();
@@ -316,13 +328,13 @@ void inst_arithmetic_imm_helper(machine_state& state, uint16_t opcode)
 
     high_precision_t result_high_precision = 
         O::template execute<high_precision_t>(
-            high_precision_t(*dst_ptr), 
+            high_precision_t(dst),
             high_precision_t(imm));
 
     T result = T(result_high_precision & high_precision_t(traits<T>::max));
 
     bool carry = has_carry(result_high_precision);
-    bool overflow = has_overflow<T>(*dst_ptr, T(imm), result);
+    bool overflow = has_overflow<T>(dst, T(imm), result);
 
     state.set_status_register<bit::extend>(carry);
     state.set_status_register<bit::negative>(is_negative(result));
@@ -363,20 +375,21 @@ void inst_cmpi_helper(machine_state& state, uint16_t opcode)
     auto mode = extract_bits<10, 3>(opcode);
     auto reg = extract_bits<13, 3>(opcode);
     T* ptr = state.get_pointer<T>(mode, reg);
+    T value = state.read(ptr);
 
     typedef traits<T>::extension_word_type_t extension_t;
     extension_t imm = state.next<extension_t>();
 
     typedef traits<T>::higher_precision_type_t high_precision_t;
     high_precision_t result_high_precision = 
-        high_precision_t(*ptr) - 
+        high_precision_t(value) -
         high_precision_t(imm);
    
     T result = (T)(result_high_precision & high_precision_t(traits<T>::max));
 
     state.set_status_register<bit::negative>(is_negative(result));
     state.set_status_register<bit::zero>(result == 0);
-    state.set_status_register<bit::overflow>(has_overflow(*ptr, T(imm), result));
+    state.set_status_register<bit::overflow>(has_overflow(value, T(imm), result));
     state.set_status_register<bit::carry>(has_carry(result_high_precision));
 }
 
@@ -413,7 +426,8 @@ inline void inst_bitop_helper(machine_state& state, uint16_t opcode)
     else
     {
         // Data register
-        bit_index = *(state.get_pointer<uint32_t>(0 /* Data register direct */, src_reg));
+        uint32_t* ptr = state.get_pointer<uint32_t>(0 /* Data register direct */, src_reg);
+        bit_index = state.read(ptr);
     }
     
     switch (dst_mode)
@@ -423,7 +437,9 @@ inline void inst_bitop_helper(machine_state& state, uint16_t opcode)
     }
 
     uint32_t* dst_ptr = state.get_pointer<uint32_t>(dst_mode, dst_reg);
-    auto result = O::template execute(*dst_ptr, bit_index);
+    uint32_t dst = state.read(dst_ptr);
+
+    auto result = O::template execute(dst, bit_index);
 
     const uint32_t mask = (1 << bit_index);
     state.set_status_register<bit::zero>((result & mask) == 0);
@@ -476,8 +492,10 @@ void inst_jmp(machine_state& state, uint16_t opcode)
     auto mode = extract_bits<10, 3>(opcode);
     auto reg = extract_bits<13, 3>(opcode);
 
-    uint32_t* jump_to = state.get_pointer<uint32_t>(mode, reg);
-    state.set_program_counter(*jump_to);
+    uint32_t* jump_to_ptr = state.get_pointer<uint32_t>(mode, reg);
+    uint32_t jump_to = state.read(jump_to_ptr);
+
+    state.set_program_counter(jump_to);
 }
 
 //
@@ -489,10 +507,11 @@ void inst_jsr(machine_state& state, uint16_t opcode)
     auto mode = extract_bits<10, 3>(opcode);
     auto reg = extract_bits<13, 3>(opcode);
 
-    uint32_t* jump_to = state.get_pointer<uint32_t>(mode, reg);
+    uint32_t* jump_to_ptr = state.get_pointer<uint32_t>(mode, reg);
+    uint32_t jump_to = state.read(jump_to_ptr);
     
     state.push_program_counter();
-    state.set_program_counter(*jump_to);
+    state.set_program_counter(jump_to);
 }
 
 //
@@ -515,17 +534,18 @@ inline void inst_arithmetic_quick_helper(machine_state& state, uint16_t opcode)
     auto reg = extract_bits<13, 3>(opcode);
 
     T* ptr = state.get_pointer<T>(mode, reg);
+    T value = state.read(ptr);
 
     typedef traits<T>::higher_precision_type_t high_precision_t;
 
     high_precision_t result_high_precision = O::template execute(
-        high_precision_t(*ptr), 
+        high_precision_t(value),
         high_precision_t(data));
 
     T result = T(result_high_precision & high_precision_t(traits<T>::max));
 
     bool carry = has_carry(result_high_precision);
-    bool overflow = has_overflow(*ptr, T(data), result);
+    bool overflow = has_overflow(value, T(data), result);
     bool negative = is_negative(result);
 
     state.set_status_register<bit::extend>(carry);

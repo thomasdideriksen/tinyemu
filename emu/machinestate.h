@@ -71,31 +71,53 @@ public:
     template <typename T>
     inline void push(T value)
     {
-        uint32_t* stack = get_pointer<uint32_t>(1, 7);
-        write<uint32_t>(stack, *stack - sizeof(T));
-        IF_FALSE_THROW(*stack >= 0, "Stack overflow");
-        write<T>((T*)&m_memory[*stack], value);
+        uint32_t* stack_ptr = get_pointer<uint32_t>(1, 7);
+        uint32_t stack_value = read(stack_ptr);
+        uint32_t new_stack_value = stack_value - sizeof(T);
+        IF_FALSE_THROW(new_stack_value >= 0, "Stack overflow");
+        write<uint32_t>(stack_ptr, new_stack_value);
+        write<T>((T*)&m_memory[new_stack_value], value);
     }
 
     template <typename T>
     inline T pop()
     {
-        uint32_t* stack = get_pointer<uint32_t>(1, 7);
-        T result = *((T*)&m_memory[*stack]);
-        write<uint32_t>(stack, *stack + sizeof(T));
+        uint32_t* stack_ptr = get_pointer<uint32_t>(1, 7);
+        uint32_t stack_value = read(stack_ptr);
+        T* mem_ptr = (T*)&m_memory[stack_value];
+        T result = read(mem_ptr);
+        uint32_t new_stack_value = stack_value + sizeof(T);
+        write<uint32_t>(stack_ptr, new_stack_value);
         return result;
     }
     
     template <typename T>
+    inline bool is_memory(T* ptr)
+    {
+        return ((uint8_t*)ptr >= m_memory && (uint8_t*)ptr < (m_memory + m_memory_size));
+    }
+
+    template <typename T>
     inline void write(T* dst, T value)
     {
         *dst = value;
-        if ((uint8_t*)dst >= m_memory && (uint8_t*)dst < (m_memory + m_memory_size))
+        if (is_memory(dst))
         {
             size_t offset = size_t(dst) - size_t(m_memory);
-            std::cout << "Memory write: MEM[0x" << std::hex << offset << "] <- 0x" << std::hex << value << " (MEM[" << std::dec << offset << "] <- " << std::dec << value << ")" << std::endl;
-            // TODO: Callback for memory mapped stuff
+            std::cout << "Memory write: MEM[0x" << std::hex << offset << "] <- 0x" << std::hex << *dst << " (MEM[" << std::dec << offset << "] <- " << std::dec << *dst << ")" << std::endl;
         }
+    }
+
+    template <typename T>
+    inline T read(T* src)
+    {
+        T value = *src;
+        if (is_memory(src))
+        {
+            size_t offset = size_t(src) - size_t(m_memory);
+            std::cout << "Memory read : MEM[0x" << std::hex << offset << "] -> 0x" << std::hex << value << " (MEM[" << std::dec << offset << "] -> " << std::dec << value << ")" << std::endl;
+        }
+        return value;
     }
 
     template <typename T>

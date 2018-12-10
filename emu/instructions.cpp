@@ -602,18 +602,7 @@ void inst_subq(machine_state& state, uint16_t opcode)
 }
 
 //
-// RTE
-// Return from exception handler
-//
-
-void inst_rte(machine_state& state, uint16_t opcode)
-{
-    state.pop_status_register();
-    state.pop_program_counter();
-}
-
-//
-// Helper: TRAP, TRAPV
+// Helper: TRAP, TRAPV, RTE
 //
 
 inline void inst_trap_helper(machine_state& state, uint32_t vector_index)
@@ -623,6 +612,21 @@ inline void inst_trap_helper(machine_state& state, uint32_t vector_index)
     state.set_status_register<bit::supervisor>(true);
     auto vector = state.get_vector(vector_index);
     state.set_program_counter(vector);
+}
+
+//
+// RTE
+// Return from exception handler
+//
+
+void inst_rte(machine_state& state, uint16_t opcode)
+{
+    if (!state.get_status_register<bit::supervisor>())
+    {
+        inst_trap_helper(state, 8 /* Privilege violation */);
+    }
+    state.pop_status_register();
+    state.pop_program_counter();
 }
 
 //
@@ -645,7 +649,7 @@ void inst_trapv(machine_state& state, uint16_t opcode)
 {
     if (state.get_status_register<bit::overflow>())
     {
-        inst_trap_helper(state, 7);
+        inst_trap_helper(state, 7 /* TRAPV */);
     }
 }
 

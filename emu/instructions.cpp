@@ -18,6 +18,7 @@
 
 //
 // MOVE
+// General purpose move
 //
 
 template <typename T>
@@ -56,6 +57,7 @@ void inst_move(machine_state& state, uint16_t opcode)
 
 //
 // MOVEQ
+// Move quick, moves a small literal/immediate value
 //
 
 void inst_moveq(machine_state& state, uint16_t opcode)
@@ -76,6 +78,7 @@ void inst_moveq(machine_state& state, uint16_t opcode)
 
 //
 // CLR
+// Clears (zeroes) operand
 //
 
 template <typename T>
@@ -102,6 +105,7 @@ void inst_clr(machine_state& state, uint16_t opcode)
 
 //
 // MOVEA
+// Move address
 //
 
 template <typename T>
@@ -132,6 +136,7 @@ void inst_movea(machine_state& state, uint16_t opcode)
 
 //
 // ADD
+// Binary addition
 //
 
 template <typename T>
@@ -221,6 +226,7 @@ inline void inst_logical_helper(machine_state& state, uint16_t opcode)
 
 //
 // AND
+// Logical AND
 //
 
 void inst_and(machine_state& state, uint16_t opcode)
@@ -231,6 +237,7 @@ void inst_and(machine_state& state, uint16_t opcode)
 
 //
 // EOR
+// Logical exclusive OR
 //
 
 void inst_eor(machine_state& state, uint16_t opcode)
@@ -241,6 +248,7 @@ void inst_eor(machine_state& state, uint16_t opcode)
 
 //
 // OR
+// Logical OR
 //
 
 void inst_or(machine_state& state, uint16_t opcode)
@@ -277,6 +285,7 @@ void inst_logical_imm_helper(machine_state& state, uint16_t opcode)
 
 //
 // ORI
+// Logical OR immediate
 //
 
 void inst_ori(machine_state& state, uint16_t opcode)
@@ -287,6 +296,7 @@ void inst_ori(machine_state& state, uint16_t opcode)
 
 //
 // ANDI
+// Logcal AND immediate
 //
 
 void inst_andi(machine_state& state, uint16_t opcode)
@@ -297,6 +307,7 @@ void inst_andi(machine_state& state, uint16_t opcode)
 
 //
 // EORI
+// Logcal exclusive OR immediate
 //
 
 void inst_eori(machine_state& state, uint16_t opcode)
@@ -347,6 +358,7 @@ void inst_arithmetic_imm_helper(machine_state& state, uint16_t opcode)
 
 //
 // SUBI
+// Subtract immediate
 //
 
 void inst_subi(machine_state& state, uint16_t opcode)
@@ -357,6 +369,7 @@ void inst_subi(machine_state& state, uint16_t opcode)
 
 //
 // ADDI
+// Add immadiate
 //
 
 void inst_addi(machine_state& state, uint16_t opcode)
@@ -367,6 +380,7 @@ void inst_addi(machine_state& state, uint16_t opcode)
 
 //
 // CMPI
+// Compare immediate
 //
 
 template <typename T>
@@ -449,6 +463,7 @@ inline void inst_bitop_helper(machine_state& state, uint16_t opcode)
 
 //
 // BTST
+// Test bit
 //
 
 void inst_btst(machine_state& state, uint16_t opcode)
@@ -458,6 +473,7 @@ void inst_btst(machine_state& state, uint16_t opcode)
 
 //
 // BSET
+// Test and set bit
 //
 
 void inst_bset(machine_state& state, uint16_t opcode)
@@ -467,6 +483,7 @@ void inst_bset(machine_state& state, uint16_t opcode)
 
 //
 // BCLR
+// Test and clear bit
 //
 
 void inst_bclr(machine_state& state, uint16_t opcode)
@@ -476,6 +493,7 @@ void inst_bclr(machine_state& state, uint16_t opcode)
 
 //
 // BCHG
+// Test and change (flip) bit
 //
 
 void inst_bchg(machine_state& state, uint16_t opcode)
@@ -485,6 +503,7 @@ void inst_bchg(machine_state& state, uint16_t opcode)
 
 //
 // JMP
+// Unconditional jump
 //
 
 void inst_jmp(machine_state& state, uint16_t opcode)
@@ -500,6 +519,7 @@ void inst_jmp(machine_state& state, uint16_t opcode)
 
 //
 // JSR
+// Jump to subroutine
 //
 
 void inst_jsr(machine_state& state, uint16_t opcode)
@@ -516,7 +536,9 @@ void inst_jsr(machine_state& state, uint16_t opcode)
 
 //
 // RTS
+// Return from subroutine
 //
+
 void inst_rts(machine_state& state, uint16_t opcode)
 {
     state.pop_program_counter();
@@ -559,6 +581,7 @@ inline void inst_arithmetic_quick_helper(machine_state& state, uint16_t opcode)
 
 //
 // ADDQ
+// Add quick, add small immediate value
 //
 
 void inst_addq(machine_state& state, uint16_t opcode)
@@ -569,6 +592,7 @@ void inst_addq(machine_state& state, uint16_t opcode)
 
 //
 // SUBQ
+// Subtract quick, subtract small immediate value
 //
 
 void inst_subq(machine_state& state, uint16_t opcode)
@@ -579,6 +603,7 @@ void inst_subq(machine_state& state, uint16_t opcode)
 
 //
 // RTE
+// Return from exception handler
 //
 
 void inst_rte(machine_state& state, uint16_t opcode)
@@ -602,6 +627,7 @@ inline void inst_trap_helper(machine_state& state, uint32_t vector_index)
 
 //
 // TRAP
+// Trap, aka. software interrupt
 //
 
 void inst_trap(machine_state& state, uint16_t opcode)
@@ -612,6 +638,7 @@ void inst_trap(machine_state& state, uint16_t opcode)
 
 //
 // TRAPV
+// Trap on overflow
 //
 
 void inst_trapv(machine_state& state, uint16_t opcode)
@@ -622,3 +649,40 @@ void inst_trapv(machine_state& state, uint16_t opcode)
     }
 }
 
+//
+// LEA
+// Load effective address
+//
+
+void inst_lea(machine_state& state, uint16_t opcode)
+{
+    auto dst_reg = extract_bits<4, 3>(opcode);
+    auto src_mode = extract_bits<10, 3>(opcode);
+    auto src_reg = extract_bits<13, 3>(opcode);
+
+    uint32_t* src_ptr = state.get_pointer<uint32_t>(src_mode, src_reg);
+    
+    uint32_t offset = 0x0;
+    IF_FALSE_THROW(state.pointer_to_memory_offset(src_ptr, offset), "Invalid pointer");
+    
+    uint32_t* dst_ptr = state.get_pointer<uint32_t>(1, dst_reg);
+    state.write(dst_ptr, offset);
+}
+
+//
+// PEA
+// Push effective address onto stack
+//
+
+void inst_pea(machine_state& state, uint16_t opcode)
+{
+    auto src_mode = extract_bits<10, 3>(opcode);
+    auto src_reg = extract_bits<13, 3>(opcode);
+
+    uint32_t* src_ptr = state.get_pointer<uint32_t>(src_mode, src_reg);
+
+    uint32_t offset = 0x0;
+    IF_FALSE_THROW(state.pointer_to_memory_offset(src_ptr, offset), "Invalid pointer");
+
+    state.push(offset);
+}

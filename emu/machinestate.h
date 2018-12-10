@@ -98,6 +98,17 @@ public:
     }
 
     template <typename T>
+    bool pointer_to_memory_offset(T* ptr, uint32_t& offset)
+    {
+        bool mem = is_memory(ptr);
+        if (mem)
+        {
+            offset = uint32_t(size_t(ptr) - size_t(m_memory));
+        }
+        return mem;
+    }
+
+    template <typename T>
     inline void write(T* dst, T value)
     {
         *dst = value;
@@ -184,7 +195,9 @@ public:
             THROW("Unimplemented addressing mode: " << mode);
 
         case 5: // Address register indirect with displacement
-            THROW("Unimplemented addressing mode: " << mode);
+            return (T*)&m_memory[
+                *(get_address_register_pointer<T>(reg)) + 
+                next<uint16_t>()];
 
         case 6: // Address register indirect with index
             THROW("Unimplemented addressing mode: " << mode);

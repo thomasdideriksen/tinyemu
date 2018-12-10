@@ -51,3 +51,7 @@ void inst_btst(machine_state& state, uint16_t opcode);
 void inst_bset(machine_state& state, uint16_t opcode);
 void inst_bclr(machine_state& state, uint16_t opcode);
 void inst_bchg(machine_state& state, uint16_t opcode);
+void inst_lea(machine_state& state, uint16_t opcode);
+void inst_pea(machine_state& state, uint16_t opcode);
+
+

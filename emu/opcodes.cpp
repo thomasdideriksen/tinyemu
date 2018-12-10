@@ -233,6 +233,16 @@ std::vector<opcode_desc_t> opcode_descriptions = {
 
     {"RTE", inst_rte, {
         {16, "Fixed", {0x4e73}}}},
+
+    {"LEA", inst_lea, {
+        {4, "Fixed", {0x4}},
+        {3, "Destination register, always an A register", ALL},
+        {3, "Fixed", {0x7}},
+        {6, "Effective address, source", ALL_MODES_EXCEPT(D | A | AiPd | AiPi | ImmSr)}}},
+
+    {"PEA", inst_pea, {
+        {10, "Fixed", {0x121}},
+        {6, "Effective address, source", ALL_MODES_EXCEPT(D | A | AiPd | AiPi | ImmSr)}} },
 };
 
 void make_opcode_table_range(

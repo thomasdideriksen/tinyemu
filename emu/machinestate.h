@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <iomanip>
 #include "common.h"
 
 enum class bit
@@ -119,7 +120,7 @@ public:
         if (is_memory(dst))
         {
             size_t offset = size_t(dst) - size_t(m_memory);
-            std::cout << "Memory write: MEM[0x" << std::hex << offset << "] <- 0x" << std::hex << *dst << " (MEM[" << std::dec << offset << "] <- " << std::dec << *dst << ")" << std::endl;
+            std::cout << "Memory write: MEM[0x" << std::setfill('0') << std::setw(8) << std::hex << offset << "] <- 0x" << std::setw(sizeof(T) * 2) << std::hex << *dst << " (MEM[" << std::dec << offset << "] <- " << std::dec << *dst << ")" << std::endl;
         }
     }
 
@@ -130,7 +131,7 @@ public:
         if (is_memory(src))
         {
             size_t offset = size_t(src) - size_t(m_memory);
-            std::cout << "Memory read : MEM[0x" << std::hex << offset << "] -> 0x" << std::hex << value << " (MEM[" << std::dec << offset << "] -> " << std::dec << value << ")" << std::endl;
+            std::cout << "Memory read : MEM[0x" << std::setfill('0') << std::setw(8) << std::hex << offset << "] -> 0x" << std::setw(sizeof(T) * 2) << std::hex << value << " (MEM[" << std::dec << offset << "] -> " << std::dec << value << ")" << std::endl;
         }
         return value;
     }
@@ -176,10 +177,14 @@ public:
         switch (mode)
         {
         case 0: // Data register direct
+        {
             return (T*)&m_registers.D[reg];
+        }
 
         case 1: // Address register direct
+        {
             return get_address_register_pointer<T>(reg);
+        }
             
         case 2: // Address register indirect
         {
@@ -189,11 +194,21 @@ public:
         }
 
         case 3: // Address register indirect with postincrement
-            THROW("Unimplemented addressing mode: " << mode);
+        {
+            auto ptr = get_address_register_pointer<T>(reg);
+            auto value = *ptr;
+            (*ptr) += sizeof(T);
+            return (T*)&m_memory[value];
+        }
 
         case 4: // Address register indirect with predecrement
-            THROW("Unimplemented addressing mode: " << mode);
-
+        {
+            auto ptr = get_address_register_pointer<T>(reg);
+            (*ptr) -= sizeof(T);
+            auto value = *ptr;
+            return (T*)&m_memory[value];
+        }
+         
         case 5: // Address register indirect with displacement
         {
             auto ptr = get_address_register_pointer<T>(reg);

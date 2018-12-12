@@ -707,32 +707,26 @@ inline void inst_movem_helper(machine_state& state, uint16_t opcode)
 
     auto mem_mode = extract_bits<10, 3>(opcode);
     auto mem_reg = extract_bits<13, 3>(opcode);
-    T* mem = state.get_pointer<T>(mem_mode, mem_reg);
 
     int32_t delta = 1;
     int32_t begin = 0;
 
     if (direction == 0 /* Register to memory */ && mem_mode == 4 /* Address register indirect with predecrement */)
     {
-        // The registers are stored starting at the specified address minus 
-        // the operand length (2 or 4) and the address is decremented by the 
-        // operand length following each transfer.
-        mem--; 
-        
-        // The order of storing is from address register 7 to address
-        // register 0, then from data register 7 to data register 0.
+        // Note: With pre-decrement addressing mode the registers are stored in inverse order (A7-A0, D7-D0)
         delta = -1;
         begin = 15;
     }
 
     for (int32_t counter = 0, i = begin; counter < 16; counter++, i += delta)
     {
-        uint32_t reg_mode = (i >> 3) & 0x1;
-        uint32_t reg_reg = i & 0x7;
-        T* reg = state.get_pointer<T>(reg_mode, reg_reg);
-
         if (((1 << i) & register_select) != 0)
         {
+            uint32_t reg_mode = (i >> 3) & 0x1;
+            uint32_t reg_reg = i & 0x7;
+            T* reg = state.get_pointer<T>(reg_mode, reg_reg);
+            T* mem = state.get_pointer<T>(mem_mode, mem_reg);
+
             switch (direction)
             {
             case 0: // Register to memory 
@@ -744,24 +738,7 @@ inline void inst_movem_helper(machine_state& state, uint16_t opcode)
             default:
                 THROW("Invalid direction");
             }
-            mem += delta;
         }
-    }
-
-    if (direction == 1 /* Memory to register */ && mem_mode == 3 /* Address register indirect with postincrement */)
-    {
-        // The incremented address register contains the address of the last operand plus the operand length
-        uint32_t* address_reg = state.get_pointer<uint32_t>(1, mem_reg);
-        auto offset = state.pointer_to_memory_offset(mem); 
-        state.write(address_reg, offset);
-    }
-
-    if (direction == 0 /* Register to memory */ && mem_mode == 4 /* Address register indirect with predecrement */)
-    {
-        // The decremented address register contains the address of the last operand stored
-        uint32_t* address_reg = state.get_pointer<uint32_t>(1, mem_reg);
-        auto offset = state.pointer_to_memory_offset(mem - delta); 
-        state.write(address_reg, offset);
     }
 }
 

@@ -782,20 +782,84 @@ void inst_movem(machine_state& state, uint16_t opcode)
 void inst_scc(machine_state& state, uint16_t opcode)
 {
     auto condition = extract_bits<4, 4>(opcode);
+
+    bool set = false;
+
+    bool c = state.get_status_register<bit::carry>();
+    bool z = state.get_status_register<bit::zero>();
+    bool n = state.get_status_register<bit::negative>();
+    bool v = state.get_status_register<bit::overflow>();
+
+    switch (condition)
+    {
+    case 0x0: // True (ST)
+        set = true;
+        break;
+    
+    case 0x1: // False (SF)
+        set = false;
+        break;
+    
+    case 0x2: // High (SHI)
+        set = !c && !z;
+        break;
+
+    case 0x3: // Low or same (SLS)
+        set = c || z;
+        break;
+    
+    case 0x4: // Carry clear (SCC)
+        set = !c;
+        break;
+    
+    case 0x5: // Carry set (SCS)
+        set = c;
+        break;
+
+    case 0x6: // Not equal (SNE)
+        set = !z;
+        break;
+    
+    case 0x7: // Equal (SEQ)
+        set = z;
+        break;
+
+    case 0x8: // Overflow clear (SVC)
+        set = !v;
+        break;
+
+    case 0x9: // Overflow set (SVS)
+        set = v;
+        break;
+
+    case 0xa: // Plus (SPL)
+        set = !n;
+        break;
+
+    case 0xb: // Minus (SMI)
+        set = n;
+        break;
+    
+    case 0xc: // Greater than or equal (SGE)
+        set = (n && v) || (!n && !v);
+        break;
+
+    case 0xd: // Less than (SLT)
+        set = (n && !v) || (!n && v);
+        break;
+
+    case 0xe: // Greater than (SGT)
+        set = (n && v && !z) || (!n && !v && !z);
+        break;
+
+    case 0xf: // Less than or equal (SLE)
+        set = z || (n && !v) || (!n && v);
+        break;
+    }
+
     auto dst_mode = extract_bits<10, 3>(opcode);
     auto dst_reg = extract_bits<13, 3>(opcode);
     auto dst_ptr = state.get_pointer<uint8_t>(dst_mode, dst_reg);
-
-    bool set = false;
-    switch (condition)
-    {
-    case 0x4: // Carry clear
-        set = (state.get_status_register<bit::carry>() == false);
-        break;
-    case 0x5: // Carry set
-        set = (state.get_status_register<bit::carry>() == true);
-        break;
-    }
 
     state.write<uint8_t>(dst_ptr, uint8_t(set ? 0xff : 0x00));
 }

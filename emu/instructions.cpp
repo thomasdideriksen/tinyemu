@@ -781,8 +781,6 @@ void inst_movem(machine_state& state, uint16_t opcode)
 
 void inst_scc(machine_state& state, uint16_t opcode)
 {
-    auto condition = extract_bits<4, 4>(opcode);
-
     bool set = false;
 
     bool c = state.get_status_register<bit::carry>();
@@ -790,71 +788,28 @@ void inst_scc(machine_state& state, uint16_t opcode)
     bool n = state.get_status_register<bit::negative>();
     bool v = state.get_status_register<bit::overflow>();
 
+    auto condition = extract_bits<4, 4>(opcode);
+
     switch (condition)
     {
-    case 0x0: // True (ST)
-        set = true;
-        break;
-    
-    case 0x1: // False (SF)
-        set = false;
-        break;
-    
-    case 0x2: // High (SHI)
-        set = !c && !z;
-        break;
-
-    case 0x3: // Low or same (SLS)
-        set = c || z;
-        break;
-    
-    case 0x4: // Carry clear (SCC)
-        set = !c;
-        break;
-    
-    case 0x5: // Carry set (SCS)
-        set = c;
-        break;
-
-    case 0x6: // Not equal (SNE)
-        set = !z;
-        break;
-    
-    case 0x7: // Equal (SEQ)
-        set = z;
-        break;
-
-    case 0x8: // Overflow clear (SVC)
-        set = !v;
-        break;
-
-    case 0x9: // Overflow set (SVS)
-        set = v;
-        break;
-
-    case 0xa: // Plus (SPL)
-        set = !n;
-        break;
-
-    case 0xb: // Minus (SMI)
-        set = n;
-        break;
-    
-    case 0xc: // Greater than or equal (SGE)
-        set = (n && v) || (!n && !v);
-        break;
-
-    case 0xd: // Less than (SLT)
-        set = (n && !v) || (!n && v);
-        break;
-
-    case 0xe: // Greater than (SGT)
-        set = (n && v && !z) || (!n && !v && !z);
-        break;
-
-    case 0xf: // Less than or equal (SLE)
-        set = z || (n && !v) || (!n && v);
-        break;
+    case 0x0: set = true; break;                                // True (ST)
+    case 0x1: set = false; break;                               // False (SF)
+    case 0x2: set = !c && !z; break;                            // High (SHI)
+    case 0x3: set = c || z; break;                              // Low or same (SLS)
+    case 0x4: set = !c; break;                                  // Carry clear (SCC)
+    case 0x5: set = c; break;                                   // Carry set (SCS)
+    case 0x6: set = !z; break;                                  // Not equal (SNE)
+    case 0x7: set = z; break;                                   // Equal (SEQ)
+    case 0x8: set = !v; break;                                  // Overflow clear (SVC)
+    case 0x9: set = v; break;                                   // Overflow set (SVS)
+    case 0xa: set = !n; break;                                  // Plus (SPL)
+    case 0xb: set = n; break;                                   // Minus (SMI)
+    case 0xc: set = (n && v) || (!n && !v); break;              // Greater or equal (SGE)
+    case 0xd: set = (n && !v) || (!n && v); break;              // Less than (SLT)
+    case 0xe: set = (n && v && !z) || (!n && !v && !z); break;  // Greater than (SGT)
+    case 0xf: set = z || (n && !v) || (!n && v); break;         // Less or equal (SLE)
+    default: 
+        THROW("Invalid condition: " << condition);
     }
 
     auto dst_mode = extract_bits<10, 3>(opcode);

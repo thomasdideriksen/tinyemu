@@ -68,8 +68,14 @@ void machine_state::pop_status_register()
     m_registers.SR = pop<uint16_t>();
 }
 
-uint32_t machine_state::get_vector(uint32_t vector_index)
+void machine_state::exception(uint32_t vector_index)
 {
+    push_program_counter();
+    push_status_register();
+    set_status_register<bit::supervisor>(true);
+
     uint32_t* vector_table = (uint32_t*)m_memory;
-    return read(vector_table + vector_index);
+    uint32_t vector_offset = read(vector_table + vector_index);
+    
+    set_program_counter(vector_offset);
 }

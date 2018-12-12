@@ -48,7 +48,7 @@ inline uint16_t extract_bits(uint16_t src)
 
 template <typename T>
 inline uint32_t sign_extend(const T& value)
-{
+{ 
     typedef traits<T>::signed_type_t signed_t;
     signed_t* ptr = (signed_t*)&value;
     return uint32_t(*ptr);

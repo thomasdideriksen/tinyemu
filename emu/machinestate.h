@@ -55,6 +55,14 @@ private:
             return (T*)&m_registers.A[reg];
         }
     }
+
+    template <typename T>
+    inline T* get_next_storage_pointer()
+    {
+        T* ptr = (T*)&m_storage[m_storage_index % countof(m_storage)];
+        m_storage_index++;
+        return ptr;
+    }
  
 public:
     machine_state();
@@ -66,16 +74,16 @@ public:
     void pop_program_counter();
     void push_status_register();
     void pop_status_register();
-    uint32_t get_vector(uint32_t vector);
+    void exception(uint32_t vector);
 
     template <typename T>
     inline void push(T value)
     {
         uint32_t* stack_ptr = get_pointer<uint32_t>(1, 7);
         uint32_t stack_value = read(stack_ptr);
-        uint32_t new_stack_value = stack_value - sizeof(T);
+        int64_t new_stack_value = int64_t(stack_value) - int64_t(sizeof(T));
         IF_FALSE_THROW(new_stack_value >= 0, "Stack overflow");
-        write<uint32_t>(stack_ptr, new_stack_value);
+        write<uint32_t>(stack_ptr, uint32_t(new_stack_value));
         write<T>((T*)&m_memory[new_stack_value], value);
     }
 
@@ -98,14 +106,10 @@ public:
     }
 
     template <typename T>
-    bool pointer_to_memory_offset(T* ptr, uint32_t& offset)
+    uint32_t pointer_to_memory_offset(T* ptr)
     {
-        bool mem = is_memory(ptr);
-        if (mem)
-        {
-            offset = uint32_t(size_t(ptr) - size_t(m_memory));
-        }
-        return mem;
+        IF_FALSE_THROW(is_memory(ptr), "Invalid memory pointer");
+        return uint32_t(size_t(ptr) - size_t(m_memory));
     }
 
     template <typename T>
@@ -166,14 +170,6 @@ public:
         }
     }
 
-    template <typename T>
-    inline T* get_next_storage_pointer()
-    {
-        T* ptr = (T*)&m_storage[m_storage_index % countof(m_storage)];
-        m_storage_index++;
-        return ptr;
-    }
-
     template <typename T, const bool use_imm = true>
     inline T* get_pointer(uint32_t mode, uint32_t reg)
     {
@@ -186,7 +182,11 @@ public:
             return get_address_register_pointer<T>(reg);
             
         case 2: // Address register indirect
-            return (T*)&m_memory[*(get_address_register_pointer<T>(reg))];
+        {
+            auto ptr = get_address_register_pointer<T>(reg);
+            auto value = *ptr;
+            return (T*)&m_memory[value];
+        }
 
         case 3: // Address register indirect with postincrement
             THROW("Unimplemented addressing mode: " << mode);
@@ -195,9 +195,12 @@ public:
             THROW("Unimplemented addressing mode: " << mode);
 
         case 5: // Address register indirect with displacement
-            return (T*)&m_memory[
-                *(get_address_register_pointer<T>(reg)) + 
-                next<uint16_t>()];
+        {
+            auto ptr = get_address_register_pointer<T>(reg);
+            auto value = *ptr;
+            auto displacement = next<uint16_t>();
+            return (T*)&m_memory[value + displacement];
+        }
 
         case 6: // Address register indirect with index
             THROW("Unimplemented addressing mode: " << mode);

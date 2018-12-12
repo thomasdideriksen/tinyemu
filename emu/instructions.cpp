@@ -602,19 +602,6 @@ void inst_subq(machine_state& state, uint16_t opcode)
 }
 
 //
-// Helper: TRAP, TRAPV, RTE
-//
-
-inline void inst_trap_helper(machine_state& state, uint32_t vector_index)
-{
-    state.push_program_counter();
-    state.push_status_register();
-    state.set_status_register<bit::supervisor>(true);
-    auto vector = state.get_vector(vector_index);
-    state.set_program_counter(vector);
-}
-
-//
 // RTE
 // Return from exception handler
 //
@@ -623,7 +610,7 @@ void inst_rte(machine_state& state, uint16_t opcode)
 {
     if (!state.get_status_register<bit::supervisor>())
     {
-        inst_trap_helper(state, 8 /* Privilege violation */);
+        state.exception(8 /* Privilege violation */);
     }
     state.pop_status_register();
     state.pop_program_counter();
@@ -637,7 +624,7 @@ void inst_rte(machine_state& state, uint16_t opcode)
 void inst_trap(machine_state& state, uint16_t opcode)
 {
     auto vector = extract_bits<12, 4>(opcode);
-    inst_trap_helper(state, 32 + vector); // Note: Software traps are using entry 32 - 47 in the vector table
+    state.exception(32 + vector); // Note: Software traps are using entry 32 - 47 in the vector table
 }
 
 //
@@ -649,7 +636,7 @@ void inst_trapv(machine_state& state, uint16_t opcode)
 {
     if (state.get_status_register<bit::overflow>())
     {
-        inst_trap_helper(state, 7 /* TRAPV */);
+        state.exception(7 /* TRAPV */);
     }
 }
 
@@ -665,11 +652,9 @@ void inst_lea(machine_state& state, uint16_t opcode)
     auto src_reg = extract_bits<13, 3>(opcode);
 
     uint32_t* src_ptr = state.get_pointer<uint32_t>(src_mode, src_reg);
-    
-    uint32_t offset = 0x0;
-    IF_FALSE_THROW(state.pointer_to_memory_offset(src_ptr, offset), "Invalid pointer");
-    
-    uint32_t* dst_ptr = state.get_pointer<uint32_t>(1, dst_reg);
+    uint32_t* dst_ptr = state.get_pointer<uint32_t>(1 /* Address register direct */, dst_reg);
+
+    uint32_t offset = state.pointer_to_memory_offset(src_ptr);
     state.write(dst_ptr, offset);
 }
 
@@ -685,8 +670,129 @@ void inst_pea(machine_state& state, uint16_t opcode)
 
     uint32_t* src_ptr = state.get_pointer<uint32_t>(src_mode, src_reg);
 
-    uint32_t offset = 0x0;
-    IF_FALSE_THROW(state.pointer_to_memory_offset(src_ptr, offset), "Invalid pointer");
-
+    uint32_t offset = state.pointer_to_memory_offset(src_ptr);
     state.push(offset);
+}
+
+//
+// CHK
+// Trap if value is out of specified bounds
+//
+
+void inst_chk(machine_state& state, uint16_t opcode)
+{
+    auto value_reg = extract_bits<4, 3>(opcode);
+    int16_t* value_ptr = (int16_t*)state.get_pointer<uint16_t>(0 /* Data register direct */, value_reg);
+    int16_t value = state.read(value_ptr);
+ 
+    auto src_mode = extract_bits<10, 3>(opcode);
+    auto src_reg = extract_bits<13, 3>(opcode);
+    auto src_ptr = state.get_pointer<uint16_t>(src_mode, src_reg);
+    auto upper_bound = state.read(src_ptr);
+    
+    if (value < 0 || value > upper_bound)
+    {
+        state.exception(6 /* CHK out of bounds */ );
+    }
+}
+
+//
+// Helper: MOVEM
+//
+
+template <typename T, const int direction>
+inline void inst_movem_helper(machine_state& state, uint16_t opcode)
+{
+    auto register_select = state.next<uint16_t>(); // Note: Get this first so we don't interfere with addressing modes, etc.
+
+    auto mem_mode = extract_bits<10, 3>(opcode);
+    auto mem_reg = extract_bits<13, 3>(opcode);
+    T* mem = state.get_pointer<T>(mem_mode, mem_reg);
+
+    int32_t delta = 1;
+    int32_t begin = 0;
+
+    if (direction == 0 /* Register to memory */ && mem_mode == 4 /* Address register indirect with predecrement */)
+    {
+        // The registers are stored starting at the specified address minus 
+        // the operand length (2 or 4) and the address is decremented by the 
+        // operand length following each transfer.
+        mem--; 
+        
+        // The order of storing is from address register 7 to address
+        // register 0, then from data register 7 to data register 0.
+        delta = -1;
+        begin = 15;
+    }
+
+    for (int32_t counter = 0, i = begin; counter < 16; counter++, i += delta)
+    {
+        uint32_t reg_mode = (i >> 3) & 0x1;
+        uint32_t reg_reg = i & 0x7;
+        T* reg = state.get_pointer<T>(reg_mode, reg_reg);
+
+        if (((1 << i) & register_select) != 0)
+        {
+            switch (direction)
+            {
+            case 0: // Register to memory 
+                state.write(mem, state.read(reg));
+                break;
+            case 1: // Memory to register
+                state.write((uint32_t*)reg, sign_extend(state.read(mem)));
+                break;
+            default:
+                THROW("Invalid direction");
+            }
+            mem += delta;
+        }
+    }
+
+    if (direction == 1 /* Memory to register */ && mem_mode == 3 /* Address register indirect with postincrement */)
+    {
+        // The incremented address register contains the address of the last operand plus the operand length
+        uint32_t* address_reg = state.get_pointer<uint32_t>(1, mem_reg);
+        auto offset = state.pointer_to_memory_offset(mem); 
+        state.write(address_reg, offset);
+    }
+
+    if (direction == 0 /* Register to memory */ && mem_mode == 4 /* Address register indirect with predecrement */)
+    {
+        // The decremented address register contains the address of the last operand stored
+        uint32_t* address_reg = state.get_pointer<uint32_t>(1, mem_reg);
+        auto offset = state.pointer_to_memory_offset(mem - delta); 
+        state.write(address_reg, offset);
+    }
+}
+
+//
+// MOVEM
+// Move multiple registers
+//
+
+void inst_movem(machine_state& state, uint16_t opcode)
+{
+    auto direction = extract_bits<5, 1>(opcode);
+    auto size = extract_bits<9, 1>(opcode);
+    switch (size)
+    {
+    case 0: // Word
+        switch (direction)
+        {
+        case 0: inst_movem_helper<uint16_t, 0>(state, opcode); break; // Word, register to memory
+        case 1: inst_movem_helper<uint16_t, 1>(state, opcode); break; // Word, memory to register
+        default: THROW("Invalid direction");
+        }
+        break;
+    case 1: // Long
+        switch (direction)
+        {
+        case 0: inst_movem_helper<uint32_t, 0>(state, opcode); break; // Long, register to memory
+        case 1: inst_movem_helper<uint32_t, 1>(state, opcode); break; // Long, memory to register
+        default: THROW("Invalid direction");
+        }
+        break;
+    default:
+        THROW("Invalid size");
+    }
 }

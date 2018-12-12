@@ -242,7 +242,27 @@ std::vector<opcode_desc_t> opcode_descriptions = {
 
     {"PEA", inst_pea, {
         {10, "Fixed", {0x121}},
-        {6, "Effective address, source", ALL_MODES_EXCEPT(D | A | AiPd | AiPi | ImmSr)}} },
+        {6, "Effective address, source", ALL_MODES_EXCEPT(D | A | AiPd | AiPi | ImmSr)}}},
+
+    {"CHK", inst_chk, {
+        {4, "Fixed", {0x4}},
+        {3, "Register, comparand", ALL},
+        {3, "Fixed", {0x6}},
+        {6, "Effective address, source", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
+
+    {"MOVEM (reg to mem)", inst_movem, {
+        {5, "Fixed", {0x9}},
+        {1, "Direction", {0 /* Register to memory */}},
+        {3, "Fixed", {1}},
+        {1, "Size", {0 /* Word*/ , 1 /* Long */}},
+        {6, "Effective address, source", MODES(Ai | AiPd | AiD | AiI | AbsS | AbsL)}}},
+
+    {"MOVEM (mem to reg)", inst_movem, {
+        {5, "Fixed", {0x9}},
+        {1, "Direction", {1 /* Memory to register */}},
+        {3, "Fixed", {1}},
+        {1, "Size", {0 /* Word*/ , 1 /* Long */}},
+        {6, "Effective address, source", ALL_MODES_EXCEPT(D | A | AiPd | ImmSr)}}},
 };
 
 void make_opcode_table_range(

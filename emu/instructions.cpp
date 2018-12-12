@@ -773,3 +773,29 @@ void inst_movem(machine_state& state, uint16_t opcode)
         THROW("Invalid size");
     }
 }
+
+//
+// Scc
+// Conditional set
+//
+
+void inst_scc(machine_state& state, uint16_t opcode)
+{
+    auto condition = extract_bits<4, 4>(opcode);
+    auto dst_mode = extract_bits<10, 3>(opcode);
+    auto dst_reg = extract_bits<13, 3>(opcode);
+    auto dst_ptr = state.get_pointer<uint8_t>(dst_mode, dst_reg);
+
+    bool set = false;
+    switch (condition)
+    {
+    case 0x4: // Carry clear
+        set = (state.get_status_register<bit::carry>() == false);
+        break;
+    case 0x5: // Carry set
+        set = (state.get_status_register<bit::carry>() == true);
+        break;
+    }
+
+    state.write<uint8_t>(dst_ptr, uint8_t(set ? 0xff : 0x00));
+}

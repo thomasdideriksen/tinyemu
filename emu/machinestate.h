@@ -64,6 +64,19 @@ private:
         m_storage_index++;
         return ptr;
     }
+
+    template <typename T>
+    T swap(T value)
+    {
+        switch (sizeof(T))
+        {
+        case 1: return T(value);
+        case 2: return T(::_byteswap_ushort(value));
+        case 4: return T(::_byteswap_ulong(value));
+        default:
+            THROW("Invalid type size");
+        }
+    }
  
 public:
     machine_state();
@@ -107,7 +120,7 @@ public:
     }
 
     template <typename T>
-    uint32_t pointer_to_memory_offset(T* ptr)
+    inline uint32_t pointer_to_memory_offset(T* ptr)
     {
         IF_FALSE_THROW(is_memory(ptr), "Invalid memory pointer");
         return uint32_t(size_t(ptr) - size_t(m_memory));
@@ -116,24 +129,33 @@ public:
     template <typename T>
     inline void write(T* dst, T value)
     {
-        *dst = value;
         if (is_memory(dst))
         {
-            size_t offset = size_t(dst) - size_t(m_memory);
-            std::cout << "Memory write: MEM[0x" << std::setfill('0') << std::setw(8) << std::hex << offset << "] <- 0x" << std::setw(sizeof(T) * 2) << std::hex << *dst << " (MEM[" << std::dec << offset << "] <- " << std::dec << *dst << ")" << std::endl;
+            *dst = swap<T>(value);
+            
+            /*uint32_t offset = pointer_to_memory_offset(dst);
+            std::cout << "Memory write: MEM[0x" << std::setfill('0') << std::setw(8) << std::hex << offset << "] <- 0x" << std::setw(sizeof(T) * 2) << std::hex << *dst << " (MEM[" << std::dec << offset << "] <- " << std::dec << *dst << ")" << std::endl;*/
+        }
+        else
+        {
+            *dst = value;
         }
     }
 
     template <typename T>
     inline T read(T* src)
     {
-        T value = *src;
         if (is_memory(src))
         {
-            size_t offset = size_t(src) - size_t(m_memory);
-            std::cout << "Memory read : MEM[0x" << std::setfill('0') << std::setw(8) << std::hex << offset << "] -> 0x" << std::setw(sizeof(T) * 2) << std::hex << value << " (MEM[" << std::dec << offset << "] -> " << std::dec << value << ")" << std::endl;
+            //uint32_t offset = pointer_to_memory_offset(src);
+            //std::cout << "Memory read : MEM[0x" << std::setfill('0') << std::setw(8) << std::hex << offset << "] -> 0x" << std::setw(sizeof(T) * 2) << std::hex << value << " (MEM[" << std::dec << offset << "] -> " << std::dec << value << ")" << std::endl;
+
+            return swap(*src);
         }
-        return value;
+        else
+        {
+            return *src;
+        }
     }
 
     template <typename T>
@@ -141,14 +163,7 @@ public:
     {
         T* ptr = (T*)&m_memory[m_registers.PC];
         m_registers.PC += sizeof(T);
-        switch (sizeof(T))
-        {
-        case 1: return *ptr;
-        case 2: return T(::_byteswap_ushort(*ptr));
-        case 4: return T(::_byteswap_ulong(*ptr));
-        default: 
-            THROW("Invalid type size");
-        }
+        return swap<T>(*ptr);
     }
 
     template <const bit bit>

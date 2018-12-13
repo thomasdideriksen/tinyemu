@@ -864,9 +864,14 @@ inline void inst_ext_helper(machine_state& state, uint16_t opcode)
     low_precision_t* ptr = state.get_pointer<low_precision_t>(0, reg);
     low_precision_t value = state.read<low_precision_t>(ptr);
 
-    auto result = sign_extend<low_precision_t>(value);
+    T result = (T)(sign_extend<low_precision_t>(value) & traits<T>::max);
 
-    state.write<T>((T*)ptr, T(result));
+    state.set_status_register<bit::negative>(is_negative<T>(result));
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(false);
+    state.set_status_register<bit::carry>(false);
+
+    state.write<T>((T*)ptr, result);
 }
 
 //

@@ -904,5 +904,10 @@ void inst_swap(machine_state& state, uint16_t opcode)
     uint32_t value = state.read<uint32_t>(ptr);
     uint32_t result = ((value >> 16) & 0xffff) | ((value << 16) & 0xffff0000);
 
+    state.set_status_register<bit::negative>(most_significant_bit(result));
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(false);
+    state.set_status_register<bit::carry>(false);
+
     state.write<uint32_t>(ptr, result);
 }

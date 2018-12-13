@@ -775,11 +775,9 @@ void inst_movem(machine_state& state, uint16_t opcode)
 }
 
 //
-// Scc
-// Conditional set
+// Helper: Scc, Bcc
 //
-
-void inst_scc(machine_state& state, uint16_t opcode)
+inline bool evaluate_condition(machine_state& state, uint32_t condition)
 {
     bool set = false;
 
@@ -788,33 +786,102 @@ void inst_scc(machine_state& state, uint16_t opcode)
     bool n = state.get_status_register<bit::negative>();
     bool v = state.get_status_register<bit::overflow>();
 
-    auto condition = extract_bits<4, 4>(opcode);
-
     switch (condition)
     {
-    case 0x0: set = true; break;                                // True (ST)
-    case 0x1: set = false; break;                               // False (SF)
-    case 0x2: set = !c && !z; break;                            // High (SHI)
-    case 0x3: set = c || z; break;                              // Low or same (SLS)
-    case 0x4: set = !c; break;                                  // Carry clear (SCC)
-    case 0x5: set = c; break;                                   // Carry set (SCS)
-    case 0x6: set = !z; break;                                  // Not equal (SNE)
-    case 0x7: set = z; break;                                   // Equal (SEQ)
-    case 0x8: set = !v; break;                                  // Overflow clear (SVC)
-    case 0x9: set = v; break;                                   // Overflow set (SVS)
-    case 0xa: set = !n; break;                                  // Plus (SPL)
-    case 0xb: set = n; break;                                   // Minus (SMI)
-    case 0xc: set = (n && v) || (!n && !v); break;              // Greater or equal (SGE)
-    case 0xd: set = (n && !v) || (!n && v); break;              // Less than (SLT)
-    case 0xe: set = (n && v && !z) || (!n && !v && !z); break;  // Greater than (SGT)
-    case 0xf: set = z || (n && !v) || (!n && v); break;         // Less or equal (SLE)
-    default: 
+    case 0x0: set = true; break;                                // True (T)
+    case 0x1: set = false; break;                               // False (F)
+    case 0x2: set = !c && !z; break;                            // High (HI)
+    case 0x3: set = c || z; break;                              // Low or same (LS)
+    case 0x4: set = !c; break;                                  // Carry clear (CC)
+    case 0x5: set = c; break;                                   // Carry set (CS)
+    case 0x6: set = !z; break;                                  // Not equal (NE)
+    case 0x7: set = z; break;                                   // Equal (EQ)
+    case 0x8: set = !v; break;                                  // Overflow clear (VC)
+    case 0x9: set = v; break;                                   // Overflow set (VS)
+    case 0xa: set = !n; break;                                  // Plus (PL)
+    case 0xb: set = n; break;                                   // Minus (MI)
+    case 0xc: set = (n && v) || (!n && !v); break;              // Greater or equal (GE)
+    case 0xd: set = (n && !v) || (!n && v); break;              // Less than (LT)
+    case 0xe: set = (n && v && !z) || (!n && !v && !z); break;  // Greater than (GT)
+    case 0xf: set = z || (n && !v) || (!n && v); break;         // Less or equal (LE)
+    default:
         THROW("Invalid condition: " << condition);
     }
 
+    return set;
+}
+
+
+//
+// Scc
+// Set on condition
+//
+
+void inst_scc(machine_state& state, uint16_t opcode)
+{
+    auto condition = extract_bits<4, 4>(opcode);
+    bool result = evaluate_condition(state, condition);
+    
     auto dst_mode = extract_bits<10, 3>(opcode);
     auto dst_reg = extract_bits<13, 3>(opcode);
     auto dst_ptr = state.get_pointer<uint8_t>(dst_mode, dst_reg);
+    
+    state.write<uint8_t>(dst_ptr, uint8_t(result ? 0xff : 0x00));
+}
 
-    state.write<uint8_t>(dst_ptr, uint8_t(set ? 0xff : 0x00));
+//
+// Bcc
+// Branch on condition
+//
+
+void inst_bcc(machine_state& state, uint16_t opcode)
+{
+    auto condition = extract_bits<4, 4>(opcode);
+    bool result = evaluate_condition(state, condition);
+
+    if (result)
+    {
+        auto unused = extract_bits<8, 8>(opcode);
+        
+        auto displacement = state.next<uint16_t>();
+        
+        // TODO
+
+        //state.set_program_counter()
+    }
+}
+
+//
+// Helper: EXT
+//
+
+template <typename T>
+inline void inst_ext_helper(machine_state& state, uint16_t opcode)
+{
+    auto reg = extract_bits<13, 3>(opcode);
+
+    typedef traits<T>::lower_precision_type_t low_precision_t;
+    low_precision_t* ptr = state.get_pointer<low_precision_t>(0, reg);
+    low_precision_t value = state.read<low_precision_t>(ptr);
+
+    auto result = sign_extend<low_precision_t>(value);
+
+    state.write<T>((T*)ptr, T(result));
+}
+
+//
+// EXT
+// Sign extend a data register
+//
+
+void inst_ext(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<9, 1>(opcode);
+    switch (size)
+    {
+    case 0: inst_ext_helper<uint16_t>(state, opcode); break;
+    case 1: inst_ext_helper<uint32_t>(state, opcode); break;
+    default:
+        THROW("Invalid size");
+    }
 }

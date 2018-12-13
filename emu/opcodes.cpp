@@ -269,6 +269,17 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {4, "Condition", ALL},
         {2, "Fixed", {0x3}},
         {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
+
+    {"Bcc", inst_bcc, {
+        {4, "Fixed", {0x6}},
+        {4, "Condition", ALL},
+        {8, "Displacement", ALL}}},
+
+    {"EXT", inst_ext, {
+        {9, "Fixed", {0x91}},
+        {1, "Size", {0 /* Word */, 1 /* Long */}},
+        {3, "Fixed", {0}},
+        {3, "Data register", ALL}}},
 };
 
 void make_opcode_table_range(

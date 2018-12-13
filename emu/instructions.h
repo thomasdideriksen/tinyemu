@@ -56,5 +56,6 @@ void inst_lea(machine_state& state, uint16_t opcode);
 void inst_pea(machine_state& state, uint16_t opcode);
 void inst_chk(machine_state& state, uint16_t opcode);
 void inst_scc(machine_state& state, uint16_t opcode);
-
+void inst_bcc(machine_state& state, uint16_t opcode);
+void inst_ext(machine_state& state, uint16_t opcode);
 

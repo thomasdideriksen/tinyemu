@@ -24,6 +24,7 @@ template <>
 struct traits<uint16_t>
 {
     typedef int16_t signed_type_t;
+    typedef uint8_t lower_precision_type_t;
     typedef uint32_t higher_precision_type_t;
     typedef uint16_t extension_word_type_t;
     static const uint16_t max = 0xffff;
@@ -34,6 +35,7 @@ template <>
 struct traits<uint32_t>
 {
     typedef int32_t signed_type_t;
+    typedef uint16_t lower_precision_type_t;
     typedef uint64_t higher_precision_type_t;
     typedef uint32_t extension_word_type_t;
     static const uint32_t max = 0xffffffff;

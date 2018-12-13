@@ -895,6 +895,7 @@ void inst_ext(machine_state& state, uint16_t opcode)
 // SWAP
 // Swap register halves
 //
+
 void inst_swap(machine_state& state, uint16_t opcode)
 {
     auto reg = extract_bits<13, 3>(opcode);

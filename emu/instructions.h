@@ -58,4 +58,4 @@ void inst_chk(machine_state& state, uint16_t opcode);
 void inst_scc(machine_state& state, uint16_t opcode);
 void inst_bcc(machine_state& state, uint16_t opcode);
 void inst_ext(machine_state& state, uint16_t opcode);
-
+void inst_swap(machine_state& state, uint16_t opcode);

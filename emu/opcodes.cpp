@@ -280,6 +280,10 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {1, "Size", {0 /* Word */, 1 /* Long */}},
         {3, "Fixed", {0}},
         {3, "Data register", ALL}}},
+
+    {"SWAP", inst_swap, {
+        {13, "Fixed", {0x908}},
+        {3, "Data register", ALL}}},
 };
 
 void make_opcode_table_range(

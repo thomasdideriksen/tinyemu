@@ -890,3 +890,18 @@ void inst_ext(machine_state& state, uint16_t opcode)
         THROW("Invalid size");
     }
 }
+
+//
+// SWAP
+// Swap register halves
+//
+void inst_swap(machine_state& state, uint16_t opcode)
+{
+    auto reg = extract_bits<13, 3>(opcode);
+
+    uint32_t* ptr = state.get_pointer<uint32_t>(0, reg);
+    uint32_t value = state.read<uint32_t>(ptr);
+    uint32_t result = ((value >> 16) & 0xffff) | ((value << 16) & 0xffff0000);
+
+    state.write<uint32_t>(ptr, result);
+}

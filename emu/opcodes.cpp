@@ -284,6 +284,9 @@ std::vector<opcode_desc_t> opcode_descriptions = {
     {"SWAP", inst_swap, {
         {13, "Fixed", {0x908}},
         {3, "Data register", ALL}}},
+
+    {"ILLEGAL", inst_illegal, {
+        {16, "Fixed", {0x4afc}}}},
 };
 
 void make_opcode_table_range(

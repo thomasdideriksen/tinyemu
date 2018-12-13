@@ -911,3 +911,13 @@ void inst_swap(machine_state& state, uint16_t opcode)
 
     state.write<uint32_t>(ptr, result);
 }
+
+//
+// ILLEGAL
+// Illegal instruction
+//
+
+void inst_illegal(machine_state& state, uint16_t opcode)
+{
+    state.exception(4 /* Illegal instruction */);
+}

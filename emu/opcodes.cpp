@@ -287,6 +287,19 @@ std::vector<opcode_desc_t> opcode_descriptions = {
 
     {"ILLEGAL", inst_illegal, {
         {16, "Fixed", {0x4afc}}}},
+
+    {"NOT", inst_not, {
+        {8, "Fixed", {0x46}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */, 2 /* Long */}},
+        {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
+
+    {"LINK", inst_link, {
+        {13, "Fixed", {0x9ca}},
+        {3, "Address register", ALL}}},
+
+    {"UNLK", inst_unlk, {
+        {13, "Fixed", {0x9cb}},
+        {3, "Address register", ALL}} },
 };
 
 void make_opcode_table_range(

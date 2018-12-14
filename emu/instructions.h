@@ -19,6 +19,7 @@ void inst_or(machine_state& state, uint16_t opcode);
 void inst_ori(machine_state& state, uint16_t opcode);
 void inst_andi(machine_state& state, uint16_t opcode);
 void inst_eori(machine_state& state, uint16_t opcode);
+void inst_not(machine_state& state, uint16_t opcode);
 
 //
 // Arithmetic operators
@@ -35,6 +36,8 @@ void inst_subq(machine_state& state, uint16_t opcode);
 void inst_jmp(machine_state& state, uint16_t opcode);
 void inst_jsr(machine_state& state, uint16_t opcode);
 void inst_rts(machine_state& state, uint16_t opcode);
+void inst_link(machine_state& state, uint16_t opcode);
+void inst_unlk(machine_state& state, uint16_t opcode);
 
 //
 // Exceptions

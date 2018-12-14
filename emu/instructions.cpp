@@ -921,3 +921,82 @@ void inst_illegal(machine_state& state, uint16_t opcode)
 {
     state.exception(4 /* Illegal instruction */);
 }
+
+//
+// Helper: NOT
+//
+
+template <typename T>
+inline void inst_not_helper(machine_state& state, uint16_t opcode)
+{
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+
+    auto ptr = state.get_pointer<T>(mode, reg);
+    T value = state.read(ptr);
+    T result = ~value;
+
+    state.set_status_register<bit::negative>(is_negative(result));
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(false);
+    state.set_status_register<bit::carry>(false);
+
+    state.write<T>(ptr, result);
+}
+
+//
+// NOT
+// Logical not
+//
+
+void inst_not(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE(size, inst_not_helper);
+}
+
+//
+// LINK
+// Link and allocate 
+//
+
+void inst_link(machine_state& state, uint16_t opcode)
+{
+    // The contents of the specified address register is pushed onto the stack
+    auto reg = extract_bits<13, 3>(opcode);
+    auto ptr = state.get_pointer<uint32_t>(1, reg);
+    auto val = state.read<uint32_t>(ptr);
+    state.push<uint32_t>(val);
+
+    // Then, the address register is loaded with the updated stack pointer
+    auto stack_ptr_ptr = state.get_pointer<uint32_t>(1, 7);
+    auto stack_ptr = state.read<uint32_t>(stack_ptr_ptr);
+    state.write<uint32_t>(ptr, stack_ptr);
+
+    //  Finally, the 16-bit sign-extended displacement is added to the stack pointer
+    auto displacement = state.next<uint16_t>();
+    auto displacement_sign_extended = sign_extend(displacement);
+    auto new_stack_ptr = stack_ptr + displacement_sign_extended;
+    state.write<uint32_t>(stack_ptr_ptr, new_stack_ptr);
+}
+
+//
+// UNLK
+// Unlink
+//
+
+void inst_unlk(machine_state& state, uint16_t opcode)
+{
+    // The stack pointer is loaded from the specified address register...
+    auto reg = extract_bits<13, 3>(opcode);
+    auto ptr = state.get_pointer<uint32_t>(1, reg);
+    auto new_stack_ptr = state.read<uint32_t>(ptr);
+    
+    // ... and the old contents of the stack pointer is lost
+    auto stack_ptr_ptr = state.get_pointer<uint32_t>(1, 7);
+    state.write<uint32_t>(stack_ptr_ptr, new_stack_ptr);
+
+    // The address register is then loaded with the longword pulled off the stack.
+    auto val = state.pop<uint32_t>();
+    state.write<uint32_t>(ptr, val);
+}

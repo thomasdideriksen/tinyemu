@@ -86,11 +86,6 @@ std::vector<uint16_t> make_addressing_modes(
 #define ALL_MODES_EXCEPT(modes) make_addressing_modes(~(modes), effective_address_order::mode_register)
 #define REGISTER_FIRST_ALL_MODES_EXCEPT(modes) make_addressing_modes(~(modes), effective_address_order::register_mode)
 
-void inst_unimplemented(machine_state&, uint16_t opcode)
-{
-    THROW("Unimplemented instruction with opcode: 0x" << std::hex << opcode << " (" << std::bitset<16>(opcode) << ")");
-}
-
 std::vector<opcode_desc_t> opcode_descriptions = {
 
     {"MOVE", inst_move, {
@@ -154,7 +149,7 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {3, "Fixed", {1}},
         {3, "Destination register (always an A register)", ALL}}},
 
-    {"NEGX", inst_unimplemented, {
+    {"NEGX", inst_negx, {
         {8, "Fixed", {0x40}},
         {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
         {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
@@ -316,7 +311,13 @@ std::vector<opcode_desc_t> opcode_descriptions = {
     {"NOP", inst_nop, {
         {16, "Fixed", {0x4e71}}}},
 
+    {"NEG", inst_neg, {
+        {8, "Fixed", {0x44}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */, 2 /* Long */}},
+        {6, "Effective address, source", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
 
+    {"RTR", inst_rtr, {
+        {16, "Fixed", {0x4e77}}}},
 };
 
 void make_opcode_table_range(

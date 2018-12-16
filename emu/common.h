@@ -83,3 +83,9 @@ inline bool has_overflow(T op0, T op1, T result)
     bool op1_negative = is_negative(op1);
     return (op0_negative == op1_negative) ? op0_negative != is_negative(result) : false;
 }
+
+template <typename T>
+inline T negate(T value)
+{
+    return (~value) + 1;
+}

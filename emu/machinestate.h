@@ -89,6 +89,7 @@ public:
     void pop_status_register();
     void exception(uint32_t vector);
     void reset();
+    void set_condition_code_register(uint8_t ccr);
 
     template <typename T>
     inline void push(T value)

@@ -32,14 +32,14 @@ inline void inst_move_helper(machine_state& state, uint16_t opcode)
     T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
     T* dst_ptr = state.get_pointer<T>(dst_mode, dst_reg);
 
-    T src = state.read(src_ptr);
+    T result = state.read(src_ptr);
 
-    state.set_status_register<bit::negative>(is_negative(src));
-    state.set_status_register<bit::zero>(src == 0);
+    state.set_status_register<bit::negative>(is_negative(result));
+    state.set_status_register<bit::zero>(result == 0);
     state.set_status_register<bit::overflow>(false);
     state.set_status_register<bit::carry>(false);
     
-    state.write(dst_ptr, src);
+    state.write(dst_ptr, result);
 }
 
 void inst_move(machine_state& state, uint16_t opcode)
@@ -617,6 +617,20 @@ void inst_rte(machine_state& state, uint16_t opcode)
 }
 
 //
+// RTR
+// Return and restore condition codes
+//
+
+void inst_rtr(machine_state& state, uint16_t opcode)
+{
+    // Pop the status register (SR) off the stack, but only set the condition code register (CCR)
+    auto status_reg = state.pop<uint16_t>();
+    state.set_condition_code_register(uint8_t(status_reg & 0xff));
+
+    state.pop_program_counter();
+}
+
+//
 // TRAP
 // Trap, aka. software interrupt
 //
@@ -1085,7 +1099,7 @@ inline void inst_movep_helper(machine_state& state, uint16_t opcode)
     auto reg_reg = extract_bits<4, 3>(opcode);
     auto mem_reg = extract_bits<13, 3>(opcode);
 
-    auto reg_ptr = state.get_pointer<uint8_t>(0, reg_reg) + sizeof(T) - 1;
+    auto reg_ptr = state.get_pointer<uint8_t>(0, reg_reg) + sizeof(T) - 1; // Note: Endian
     auto mem_ptr = state.get_pointer<uint8_t>(2, mem_reg) + state.next<int16_t>();
     
     auto direction = extract_bits<8, 1>(opcode);
@@ -1099,7 +1113,7 @@ inline void inst_movep_helper(machine_state& state, uint16_t opcode)
             THROW("Invalid direction");
         }
         mem_ptr += 2;
-        reg_ptr -= 1;
+        reg_ptr -= 1;  // Note: Endian
     }
 }
 
@@ -1119,3 +1133,62 @@ void inst_movep(machine_state& state, uint16_t opcode)
         THROW("Invalid size");
     }
 }
+
+//
+// Helper: NEGX, NEG
+//
+
+template <typename T, bool use_extend>
+inline void inst_negate_helper(machine_state& state, uint16_t opcode)
+{
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+
+    auto ptr = state.get_pointer<T>(mode, reg);
+    auto val = state.read<T>(ptr);
+
+    T extend = (use_extend && state.get_status_register<bit::extend>()) ? T(1) : T(0);
+
+    val = negate(val);
+    extend = negate(extend);
+
+    typedef traits<T>::higher_precision_type_t high_precition_t;
+
+    high_precition_t result_high_precision = high_precition_t(val) + high_precition_t(extend);
+    T result = (T)(result_high_precision & traits<T>::max);
+
+    bool negative = is_negative(result);
+    bool overflow = has_overflow(val, extend, result);
+
+    state.set_status_register<bit::extend>(result != 0);
+    state.set_status_register<bit::negative>(negative);
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(overflow);
+    state.set_status_register<bit::carry>(result != 0);
+
+    state.write<T>(ptr, result);
+}
+
+//
+// NEGX
+// Negate with extend
+//
+
+void inst_negx(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_negate_helper, true);
+}
+
+//
+// NEG
+// Negate
+//
+
+void inst_neg(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_negate_helper, false);
+}
+
+

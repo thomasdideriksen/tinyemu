@@ -30,6 +30,7 @@ void inst_subi(machine_state& state, uint16_t opcode);
 void inst_addi(machine_state& state, uint16_t opcode);
 void inst_addq(machine_state& state, uint16_t opcode);
 void inst_subq(machine_state& state, uint16_t opcode);
+void inst_neg(machine_state& state, uint16_t opcode);
 
 //
 // Branch/jump
@@ -37,6 +38,7 @@ void inst_subq(machine_state& state, uint16_t opcode);
 void inst_jmp(machine_state& state, uint16_t opcode);
 void inst_jsr(machine_state& state, uint16_t opcode);
 void inst_rts(machine_state& state, uint16_t opcode);
+void inst_rtr(machine_state& state, uint16_t opcode);
 void inst_link(machine_state& state, uint16_t opcode);
 void inst_unlk(machine_state& state, uint16_t opcode);
 
@@ -68,3 +70,4 @@ void inst_tas(machine_state& state, uint16_t opcode);
 void inst_tst(machine_state& state, uint16_t opcode);
 void inst_reset(machine_state& state, uint16_t opcode);
 void inst_nop(machine_state& state, uint16_t opcode);
+void inst_negx(machine_state& state, uint16_t opcode);

@@ -79,3 +79,9 @@ void machine_state::exception(uint32_t vector_index)
     
     set_program_counter(vector_offset);
 }
+
+void machine_state::reset()
+{
+    // TODO
+    THROW("Reset not implemented");
+}

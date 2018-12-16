@@ -43,17 +43,16 @@ private:
     uint32_t m_storage[4];
     uint32_t m_storage_index;
 
-    template <typename T>
-    inline T* get_address_register_pointer(uint32_t reg)
+    inline uint32_t* get_address_register_pointer(uint32_t reg)
     {
         // Note: Adress register 7 is special: It refers to the user *or* supervisor stack pointer, depending on the current CPU mode
         if (reg == 7)
         {
-            return (T*)(get_status_register<bit::supervisor>() ? &m_registers.SSP : &m_registers.USP);
+            return (uint32_t*)(get_status_register<bit::supervisor>() ? &m_registers.SSP : &m_registers.USP);
         }
         else
         {
-            return (T*)&m_registers.A[reg];
+            return (uint32_t*)&m_registers.A[reg];
         }
     }
 
@@ -89,6 +88,7 @@ public:
     void push_status_register();
     void pop_status_register();
     void exception(uint32_t vector);
+    void reset();
 
     template <typename T>
     inline void push(T value)
@@ -198,19 +198,19 @@ public:
 
         case 1: // Address register direct
         {
-            return get_address_register_pointer<T>(reg);
+            return (T*)get_address_register_pointer(reg);
         }
             
         case 2: // Address register indirect
         {
-            auto ptr = get_address_register_pointer<T>(reg);
+            auto ptr = get_address_register_pointer(reg);
             auto value = *ptr;
             return (T*)&m_memory[value];
         }
 
         case 3: // Address register indirect with postincrement
         {
-            auto ptr = get_address_register_pointer<T>(reg);
+            auto ptr = get_address_register_pointer(reg);
             auto value = *ptr;
             (*ptr) += sizeof(T);
             return (T*)&m_memory[value];
@@ -218,7 +218,7 @@ public:
 
         case 4: // Address register indirect with predecrement
         {
-            auto ptr = get_address_register_pointer<T>(reg);
+            auto ptr = get_address_register_pointer(reg);
             (*ptr) -= sizeof(T);
             auto value = *ptr;
             return (T*)&m_memory[value];
@@ -226,7 +226,7 @@ public:
          
         case 5: // Address register indirect with displacement
         {
-            auto ptr = get_address_register_pointer<T>(reg);
+            auto ptr = get_address_register_pointer(reg);
             auto value = *ptr;
             auto displacement = next<uint16_t>();
             return (T*)&m_memory[value + displacement];

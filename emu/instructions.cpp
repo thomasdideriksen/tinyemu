@@ -720,7 +720,9 @@ inline void inst_movem_helper(machine_state& state, uint16_t opcode)
 
     for (int32_t counter = 0, i = begin; counter < 16; counter++, i += delta)
     {
-        if (((1 << i) & register_select) != 0)
+        const uint32_t mask = (1 << i);
+
+        if ((mask & register_select) != 0)
         {
             uint32_t reg_mode = (i >> 3) & 0x1;
             uint32_t reg_reg = i & 0x7;
@@ -999,4 +1001,121 @@ void inst_unlk(machine_state& state, uint16_t opcode)
     // The address register is then loaded with the longword pulled off the stack.
     auto val = state.pop<uint32_t>();
     state.write<uint32_t>(ptr, val);
+}
+
+//
+// TAS
+// Test and set operand
+//
+
+void inst_tas(machine_state& state, uint16_t opcode)
+{
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+
+    auto ptr = state.get_pointer<uint8_t>(mode, reg);
+    auto val = state.read<uint8_t>(ptr);
+
+    state.set_status_register<bit::negative>(most_significant_bit(val));
+    state.set_status_register<bit::zero>(val == 0);
+    state.set_status_register<bit::overflow>(false);
+    state.set_status_register<bit::carry>(false);
+
+    val |= (1 << 7);
+
+    state.write<uint8_t>(ptr, val);
+}
+
+//
+// Helper: TST
+//
+
+template <typename T>
+inline void inst_tst_helper(machine_state& state, uint16_t opcode)
+{
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+    
+    auto ptr = state.get_pointer<T>(mode, reg);
+    auto val = state.read<T>(ptr);
+
+    state.set_status_register<bit::negative>(is_negative(val));
+    state.set_status_register<bit::zero>(val == 0);
+    state.set_status_register<bit::overflow>(false);
+    state.set_status_register<bit::carry>(false);
+}
+
+//
+// TST
+// Test an operand
+//
+
+void inst_tst(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE(size, inst_tst_helper);
+}
+
+//
+// RESET
+// Reset external devices
+//
+
+void inst_reset(machine_state& state, uint16_t opcode)
+{
+    state.reset();
+}
+
+//
+// NOP
+// No operation
+//
+
+void inst_nop(machine_state& state, uint16_t opcode)
+{
+}
+
+//
+// Helper: MOVEP
+//
+
+template <typename T>
+inline void inst_movep_helper(machine_state& state, uint16_t opcode)
+{
+    auto reg_reg = extract_bits<4, 3>(opcode);
+    auto mem_reg = extract_bits<13, 3>(opcode);
+
+    auto reg_ptr = state.get_pointer<uint8_t>(0, reg_reg) + sizeof(T) - 1;
+    auto mem_ptr = state.get_pointer<uint8_t>(2, mem_reg) + state.next<int16_t>();
+    
+    auto direction = extract_bits<8, 1>(opcode);
+    for (uint32_t i = 0; i < sizeof(T); i++)
+    {
+        switch (direction)
+        {
+        case 0: state.write<uint8_t>(reg_ptr, state.read<uint8_t>(mem_ptr)); break; // Memory to register
+        case 1: state.write<uint8_t>(mem_ptr, state.read<uint8_t>(reg_ptr)); break; // Register to memory
+        default:
+            THROW("Invalid direction");
+        }
+        mem_ptr += 2;
+        reg_ptr -= 1;
+    }
+}
+
+//
+// MOVEP
+// Move peripheral data
+//
+
+void inst_movep(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<9, 1>(opcode);
+    switch (size)
+    {
+    case 0: inst_movep_helper<uint16_t>(state, opcode); break;
+    case 1: inst_movep_helper<uint32_t>(state, opcode); break;
+    default:
+        THROW("Invalid size");
+    }
 }

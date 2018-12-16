@@ -145,14 +145,14 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
         {6, "Effective address, source", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
 
-    {"MOVEP", inst_unimplemented, {
+    {"MOVEP", inst_movep, {
         {4, "Fixed", {0}},
-        {3, "Destination Register (always a D register)", ALL},
+        {3, "Source register (always a D register)", ALL},
         {1, "Fixed", {1}},
         {1, "Direction", {0 /* Memory to register */, 1 /* Register to memory */}},
         {1, "Size", {0 /* Word */, 1 /* Long */}},
         {3, "Fixed", {1}},
-        {3, "Source Register (always an A register)", ALL}}},
+        {3, "Destination register (always an A register)", ALL}}},
 
     {"NEGX", inst_unimplemented, {
         {8, "Fixed", {0x40}},
@@ -299,7 +299,24 @@ std::vector<opcode_desc_t> opcode_descriptions = {
 
     {"UNLK", inst_unlk, {
         {13, "Fixed", {0x9cb}},
-        {3, "Address register", ALL}} },
+        {3, "Address register", ALL}}},
+
+    {"TAS", inst_tas, {
+        {10, "Fixed", {0x12b}},
+        {6, "Effective address, source", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
+
+    {"TST", inst_tst, {
+        {8, "Fixed", {0x4a}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */, 2 /* Long */}},
+        {6, "Effective address, source", ALL_MODES_EXCEPT(A | ImmSr)}}},
+
+    {"RESET", inst_reset, {
+        {16, "Fixed", {0x4e70}}}},
+
+    {"NOP", inst_nop, {
+        {16, "Fixed", {0x4e71}}}},
+
+
 };
 
 void make_opcode_table_range(

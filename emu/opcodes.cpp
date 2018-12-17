@@ -318,6 +318,18 @@ std::vector<opcode_desc_t> opcode_descriptions = {
 
     {"RTR", inst_rtr, {
         {16, "Fixed", {0x4e77}}}},
+
+    {"DIVU", inst_divu, {
+        {4, "Fixed", {0x8}},
+        {3, "Source register", ALL},
+        {3, "Fixed", {0x3}},
+        {6, "Effective address, destination", ALL_MODES_EXCEPT(A)}}},
+
+    {"DIVS", inst_divs, {
+       {4, "Fixed", {0x8}},
+       {3, "Source register", ALL},
+       {3, "Fixed", {0x7}},
+       {6, "Effective address, destination", ALL_MODES_EXCEPT(A)}}},
 };
 
 void make_opcode_table_range(

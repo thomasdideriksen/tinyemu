@@ -67,10 +67,6 @@ Adressing modes:
 
 int main(void)
 {
-    uint32_t a = 0;
-    auto b = negate(a);
-
-
     try
     {
         machine_state machine;

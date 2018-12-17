@@ -74,3 +74,4 @@ void inst_tas(machine_state& state, uint16_t opcode);
 void inst_tst(machine_state& state, uint16_t opcode);
 void inst_reset(machine_state& state, uint16_t opcode);
 void inst_nop(machine_state& state, uint16_t opcode);
+void inst_exg(machine_state& state, uint16_t opcode);

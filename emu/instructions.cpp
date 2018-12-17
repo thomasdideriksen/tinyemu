@@ -1261,3 +1261,48 @@ void inst_divs(machine_state& state, uint16_t opcode)
 {
     inst_divide_helper<int16_t, int32_t, -32768, 32767>(state, opcode);
 }
+
+//
+// EXG
+// Exchange registers
+//
+
+void inst_exg(machine_state& state, uint16_t opcode)
+{
+    uint32_t mode1;
+    uint32_t mode2;
+
+    auto operation = extract_bits<8, 5>(opcode);
+    switch (operation)
+    {
+    case 0x8: // D/D
+        mode1 = 0;
+        mode2 = 0;
+        break;
+
+    case 0x9: // A/A
+        mode1 = 1;
+        mode2 = 1;
+        break;
+
+    case 0x11: // D/A
+        mode1 = 0;
+        mode2 = 1;
+        break;
+
+    default:
+        THROW("Invalid operation");
+    }
+
+    auto reg1 = extract_bits<4, 3>(opcode);
+    auto reg2 = extract_bits<13, 3>(opcode);
+
+    auto ptr1 = state.get_pointer<uint32_t>(mode1, reg1);
+    auto ptr2 = state.get_pointer<uint32_t>(mode2, reg2);
+
+    auto val1 = state.read<uint32_t>(ptr1);
+    auto val2 = state.read<uint32_t>(ptr2);
+
+    state.write<uint32_t>(ptr1, val2);
+    state.write<uint32_t>(ptr2, val1);
+}

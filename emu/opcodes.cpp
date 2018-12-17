@@ -119,12 +119,19 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
         {6, "Source", ALL_MODES}}},
 
-    {"AND", inst_and, {
+    {"AND (write to dst)", inst_and, {
         {4, "Fixed", {0xc}},
         {3, "Destination Register (always a D register)", ALL},
-        {1, "Direction", {0 /* Write to dst (D register) */, 1 /* Write to src (ea) */}},
+        {1, "Direction", {0 /* Write to dst (D register) */}},
         {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
         {6, "Effective address, source", ALL_MODES_EXCEPT(A)}}},
+
+    {"AND (write to src)", inst_and, {
+        {4, "Fixed", {0xc}},
+        {3, "Destination Register (always a D register)", ALL},
+        {1, "Direction", {1 /* Write to src (ea) */}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
+        {6, "Effective address, source", ALL_MODES_EXCEPT(A | D /* Note: When "direction" is 1 (write to src) src cannot be a D register */)}}},
 
     {"EOR", inst_eor, {
         {4, "Fixed", {0xb}},
@@ -330,6 +337,13 @@ std::vector<opcode_desc_t> opcode_descriptions = {
        {3, "Source register", ALL},
        {3, "Fixed", {0x7}},
        {6, "Effective address, destination", ALL_MODES_EXCEPT(A)}}},
+
+    {"EXG", inst_exg, {
+        {4, "Fixed", {0xc}},
+        {3, "Register 1 (prefer D)", ALL},
+        {1, "Fixed", {1}},
+        {5, "Operation", {0x8 /* D/D */, 0x9 /* A/A */, 0x11 /* D/A */}},
+        {3, "Register 2 (prefer A)", ALL}}},
 };
 
 void make_opcode_table_range(

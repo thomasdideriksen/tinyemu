@@ -1195,14 +1195,14 @@ void inst_neg(machine_state& state, uint16_t opcode)
 // Helper: DIVU, DIVS
 //
 
-template <typename T16, typename T32>
+template <typename TDenom, typename TNum, const TNum min_val, const TNum max_val>
 inline void inst_divide_helper(machine_state& state, uint16_t opcode)
 {
     // Denominator (16 bits)
     auto denom_mode = extract_bits<10, 3>(opcode);
     auto denom_reg = extract_bits<13, 3>(opcode);
     auto denom_ptr = state.get_pointer<uint16_t>(denom_mode, denom_reg);
-    T16 denom_val = state.read<T16>((T16*)denom_ptr);
+    auto denom_val = state.read<TDenom>((TDenom*)denom_ptr);
 
     // Always clear carry flag
     state.set_status_register<bit::carry>(false);
@@ -1216,27 +1216,28 @@ inline void inst_divide_helper(machine_state& state, uint16_t opcode)
         // Numerator (32 bits)
         auto num_reg = extract_bits<4, 3>(opcode);
         auto num_ptr = state.get_pointer<uint32_t>(0, num_reg);
-        T32 num_val = state.read<T32>((T32*)num_ptr);
+        auto num_val = state.read<TNum>((TNum*)num_ptr);
 
         // Divide
-        uint32_t quotient = uint32_t(num_val / T32(denom_val));
+        auto quotient = num_val / TNum(denom_val);
 
-        // Does the result overflow (aka. does it exceed 16 bits?)
-        bool overflow = (quotient & 0xffff0000) != 0;
+        // Does the result overflow
+        bool overflow = (quotient > max_val) || (quotient < min_val);
         state.set_status_register<bit::overflow>(overflow);
 
         if (!overflow)
         {
             // Generate result (quotient + remainder)
-            uint32_t remainder = uint32_t(num_val % T32(denom_val));
-            uint32_t result = ((remainder << 16) & 0xffff0000) | (quotient & 0xffff);
+            uint32_t quotient_unsigned = uint32_t(quotient);
+            uint32_t remainder = uint32_t(num_val % TNum(denom_val));
+            uint32_t result = ((remainder << 16) & 0xffff0000) | (quotient_unsigned & 0xffff);
 
             // Update status bits
-            state.set_status_register<bit::negative>(is_negative(quotient));
+            state.set_status_register<bit::negative>(is_negative(quotient_unsigned));
             state.set_status_register<bit::zero>(quotient == 0);
 
             // Write result
-            state.write<uint32_t>((uint32_t*)denom_ptr, result);
+            state.write<uint32_t>((uint32_t*)num_ptr, result);
         }
     }
 }
@@ -1248,7 +1249,7 @@ inline void inst_divide_helper(machine_state& state, uint16_t opcode)
 
 void inst_divu(machine_state& state, uint16_t opcode)
 {
-    inst_divide_helper<uint16_t, uint32_t>(state, opcode);
+    inst_divide_helper<uint16_t, uint32_t, 0, 65535>(state, opcode);
 }
 
 //
@@ -1258,5 +1259,5 @@ void inst_divu(machine_state& state, uint16_t opcode)
 
 void inst_divs(machine_state& state, uint16_t opcode)
 {
-    inst_divide_helper<int16_t, int32_t>(state, opcode);
+    inst_divide_helper<int16_t, int32_t, -32768, 32767>(state, opcode);
 }

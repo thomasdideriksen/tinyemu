@@ -25,6 +25,10 @@ void inst_btst(machine_state& state, uint16_t opcode);
 void inst_bset(machine_state& state, uint16_t opcode);
 void inst_bclr(machine_state& state, uint16_t opcode);
 void inst_bchg(machine_state& state, uint16_t opcode);
+void inst_lsl_mem(machine_state& state, uint16_t opcode);
+void inst_lsl_reg(machine_state& state, uint16_t opcode);
+void inst_lsr_mem(machine_state& state, uint16_t opcode);
+void inst_lsr_reg(machine_state& state, uint16_t opcode);
 
 //
 // Arithmetic operators

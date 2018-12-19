@@ -1306,3 +1306,142 @@ void inst_exg(machine_state& state, uint16_t opcode)
     state.write<uint32_t>(ptr1, val2);
     state.write<uint32_t>(ptr2, val1);
 }
+
+//
+// Helper: LSx, Register
+//
+
+struct operation_shift_left
+{
+    template <typename T>
+    static T execute(T value, uint32_t shift_amount, bool& last_shifted_out)
+    {
+        last_shifted_out = ((value >> (traits<T>::bits - shift_amount)) & 0x1) != 0;
+        return value << shift_amount;
+    }
+};
+
+struct operation_shift_right
+{
+    template <typename T>
+    static T execute(T value, uint32_t shift_amount, bool& last_shifted_out)
+    {
+        last_shifted_out = ((value >> (shift_amount - 1)) & 0x1) != 0;
+        return value >> shift_amount;
+    }
+};
+
+template <typename T, typename O>
+inline void inst_lsx_reg_helper(machine_state& state, uint16_t opcode)
+{
+    uint32_t shift_amount = 0;
+
+    auto rotation = extract_bits<4, 3>(opcode);
+    auto mode = extract_bits<10, 1>(opcode);
+
+    switch (mode)
+    {
+    case 0: // Immediate
+        shift_amount = rotation;
+        break;
+    case 1: // Data register
+        shift_amount = state.read<uint32_t>(state.get_pointer<uint32_t>(0, rotation));
+        break;
+    default:
+        THROW("Invalid mode");
+    }
+
+    // Modulo 64
+    shift_amount &= 0x3f;
+
+    auto reg = extract_bits<13, 3>(opcode);
+    auto ptr = state.get_pointer<T>(0, reg);
+    auto val = state.read<T>(ptr);
+
+    bool last_shifted_out = false;
+    T result = O::template execute<T>(val, shift_amount, last_shifted_out);
+
+    if (shift_amount > 0)
+    {
+        state.set_status_register<bit::extend>(last_shifted_out);
+        state.set_status_register<bit::carry>(last_shifted_out);
+    }
+    else
+    {
+        // The X (extend) bit is unaffected if the shift amount is zero, but C (carry) is cleared
+        state.set_status_register<bit::carry>(false);
+    }
+    
+    state.set_status_register<bit::negative>(is_negative(result));
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(false);
+
+    state.write<T>(ptr, result);
+}
+
+//
+// LSL, Register
+// Logical left shift
+//
+
+void inst_lsl_reg(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_lsx_reg_helper, operation_shift_left);
+}
+
+//
+// LSR, Register
+// Logical right shift
+//
+
+void inst_lsr_reg(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_lsx_reg_helper, operation_shift_right);
+}
+
+//
+// Helper: LSx, Memory
+//
+
+template <typename O>
+inline void inst_lsx_mem_helper(machine_state& state, uint16_t opcode)
+{
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+
+    auto ptr = state.get_pointer<uint16_t>(mode, reg);
+    uint16_t val = state.read<uint16_t>(ptr);
+
+    bool last_shifted_out = false;
+    uint16_t result = O::template execute<uint16_t>(val, 1, last_shifted_out);
+
+    state.set_status_register<bit::extend>(last_shifted_out);
+    state.set_status_register<bit::negative>(is_negative(result));
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(false);
+    state.set_status_register<bit::carry>(last_shifted_out);
+
+    state.write<uint16_t>(ptr, result);
+}
+
+//
+// LSL, Memory
+// Logical shift left
+//
+
+void inst_lsl_mem(machine_state& state, uint16_t opcode)
+{
+    inst_lsx_mem_helper<operation_shift_left>(state, opcode);
+}
+
+//
+// LSR, Memory
+// Logical shift right
+//
+
+void inst_lsr_mem(machine_state& state, uint16_t opcode)
+{
+    inst_lsx_mem_helper<operation_shift_right>(state, opcode);
+}

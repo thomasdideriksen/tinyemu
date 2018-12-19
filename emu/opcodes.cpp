@@ -139,7 +139,7 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {1, "Direction", {0 /* Write to dst (D register) */, 1 /* Write to src (ea) */}},
         {2, "Size", {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
         {6, "Effective address, source", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
-    
+
     {"OR", inst_or, {
         {4, "Fixed", {0x8}},
         {3, "Destination Register (always a D register)", ALL},
@@ -190,7 +190,7 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {8, "Fixed", {0xc}},
         {2, "Size",  {0 /* Byte */, 1 /* Word */ , 2 /* Long */}},
         {6, "Effective address, destination", ALL_MODES_EXCEPT(A | ImmSr)}}},
-    
+
     {"BTST (immediate)", inst_btst, {
         {10, "Fixed", {0x20}},
         {6, "Effective address, destination", ALL_MODES_EXCEPT(A | ImmSr)}}},
@@ -344,6 +344,32 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {1, "Fixed", {1}},
         {5, "Operation", {0x8 /* D/D */, 0x9 /* A/A */, 0x11 /* D/A */}},
         {3, "Register 2 (prefer A)", ALL}}},
+
+    {"LSL (Memory)", inst_lsl_mem, {
+        {10, "Fixed", {0x38f}},
+        {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
+
+    {"LSR (Memory)", inst_lsr_mem, {
+        {10, "Fixed", {0x38b}},
+        {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
+
+    {"LSL (Register)", inst_lsl_reg, {
+        {4, "Fixed", {0xe}},
+        {3, "Immediate or data register", ALL},
+        {1, "Fixed", {1}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */, 2 /* Long */}},
+        {1, "Mode", {0 /* Immediate */, 1 /* Register */}},
+        {2, "Fixed", {1}},
+        {3, "Data register", ALL}}},
+
+    {"LSR (Register)", inst_lsr_reg, {
+        {4, "Fixed", {0xe}},
+        {3, "Immediate or data register", ALL},
+        {1, "Fixed", {0}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */, 2 /* Long */}},
+        {1, "Mode", {0 /* Immediate */, 1 /* Register */}},
+        {2, "Fixed", {1}},
+        {3, "Data register", ALL}} },
 };
 
 void make_opcode_table_range(
@@ -417,5 +443,5 @@ void make_opcode_table(std::vector<inst_func_ptr_t>& table)
     {
         set_count += (table[i] != nullptr) ? 1 : 0;
     }
-    std::cout << "Opcode table occupancy rate: " << set_count << " of " << table.size() << std::endl;
+    std::cout << "Opcode table occupancy: " << set_count << " of " << table.size() << std::endl;
 }

@@ -612,8 +612,11 @@ void inst_rte(machine_state& state, uint16_t opcode)
     {
         state.exception(8 /* Privilege violation */);
     }
-    state.pop_status_register();
-    state.pop_program_counter();
+    else
+    {
+        state.pop_status_register();
+        state.pop_program_counter();
+    }
 }
 
 //

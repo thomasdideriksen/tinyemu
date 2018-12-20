@@ -123,9 +123,9 @@ inline T rotate_left(T value, uint8_t shift)
 {
     switch (sizeof(T))
     {
-    case 1: return T(::_rotl8(value, shift));
-    case 2: return T(::_rotl16(value, shift));
-    case 4: return T(::_rotl(value, shift));
+    case 1: return T(::_rotl8(uint8_t(value), shift));
+    case 2: return T(::_rotl16(uint16_t(value), shift));
+    case 4: return T(::_rotl(uint32_t(value), shift));
     default:
         THROW("Invalid type size");
     }
@@ -136,9 +136,9 @@ inline T rotate_right(T value, uint8_t shift)
 {
     switch (sizeof(T))
     {
-    case 1: return T(::_rotr8(value, shift));
-    case 2: return T(::_rotr16(value, shift));
-    case 4: return T(::_rotr(value, shift));
+    case 1: return T(::_rotr8(uint8_t(value), shift));
+    case 2: return T(::_rotr16(uint16_t(value), shift));
+    case 4: return T(::_rotr(uint32_t(value), shift));
     default:
         THROW("Invalid type size");
     }

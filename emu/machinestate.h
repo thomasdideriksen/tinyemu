@@ -63,6 +63,12 @@ private:
         m_storage_index++;
         return ptr;
     }
+
+    template <typename T>
+    inline bool is_memory(T* ptr)
+    {
+        return ((uint8_t*)ptr >= m_memory && (uint8_t*)ptr < (m_memory + m_memory_size));
+    }
  
 public:
     machine_state();
@@ -100,12 +106,6 @@ public:
         uint32_t new_stack_value = stack_value + sizeof(T);
         write<uint32_t>(stack_ptr, new_stack_value);
         return result;
-    }
-    
-    template <typename T>
-    inline bool is_memory(T* ptr)
-    {
-        return ((uint8_t*)ptr >= m_memory && (uint8_t*)ptr < (m_memory + m_memory_size));
     }
 
     template <typename T>

@@ -2,6 +2,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <cstdint>
+#include <intrin.h>
 
 #define THROW(msg) { std::stringstream __stream; __stream << __FILE__ << ":" << __LINE__ << ": " << msg; throw std::runtime_error(__stream.str()); }
 #define IF_FALSE_THROW(expr, msg) { if (!(expr)) { THROW(msg); } }
@@ -89,3 +90,57 @@ inline T negate(T value)
 {
     return (~value) + 1;
 }
+
+template <typename T>
+inline bool last_shifted_out_left(T value, uint32_t shift)
+{
+    return ((value >> (traits<T>::bits - shift)) & 0x1) != 0;
+}
+
+template <typename T>
+inline bool last_shifted_out_right(T value, uint32_t shift)
+{
+    return ((value >> (shift - 1)) & 0x1) != 0;
+}
+
+// TODO: Move/abstract intrinsics invocations to platform specific file
+
+template <typename T>
+inline T swap(T value)
+{
+    switch (sizeof(T))
+    {
+    case 1: return T(value);
+    case 2: return T(::_byteswap_ushort(value));
+    case 4: return T(::_byteswap_ulong(value));
+    default:
+        THROW("Invalid type size");
+    }
+}
+
+template <typename T>
+inline T rotate_left(T value, uint8_t shift)
+{
+    switch (sizeof(T))
+    {
+    case 1: return T(::_rotl8(value, shift));
+    case 2: return T(::_rotl16(value, shift));
+    case 4: return T(::_rotl(value, shift));
+    default:
+        THROW("Invalid type size");
+    }
+}
+
+template <typename T>
+inline T rotate_right(T value, uint8_t shift)
+{
+    switch (sizeof(T))
+    {
+    case 1: return T(::_rotr8(value, shift));
+    case 2: return T(::_rotr16(value, shift));
+    case 4: return T(::_rotr(value, shift));
+    default:
+        THROW("Invalid type size");
+    }
+}
+

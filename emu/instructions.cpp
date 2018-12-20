@@ -1315,7 +1315,7 @@ struct operation_shift_left
     template <typename T>
     static T execute(T value, uint32_t shift_amount, bool& last_shifted_out)
     {
-        last_shifted_out = ((value >> (traits<T>::bits - shift_amount)) & 0x1) != 0;
+        last_shifted_out = last_shifted_out_left(value, shift_amount);
         return value << shift_amount;
     }
 };
@@ -1325,7 +1325,7 @@ struct operation_shift_right
     template <typename T>
     static T execute(T value, uint32_t shift_amount, bool& last_shifted_out)
     {
-        last_shifted_out = ((value >> (shift_amount - 1)) & 0x1) != 0;
+        last_shifted_out = last_shifted_out_right(value, shift_amount);
         return value >> shift_amount;
     }
 };
@@ -1487,13 +1487,57 @@ void inst_dbcc(machine_state& state, uint16_t opcode)
 }
 
 //
+// Helper: ROx, memory
+//
+
+struct operation_rotate_left
+{
+    template <typename T>
+    static T execute(T value, uint32_t shift_amount, bool& last_shifted_out)
+    {
+        last_shifted_out = last_shifted_out_left(value, shift_amount);
+        return rotate_left<T>(value, shift_amount);
+    }
+};
+
+struct operation_rotate_right
+{
+    template <typename T>
+    static T execute(T value, uint32_t shift_amount, bool& last_shifted_out)
+    {
+        last_shifted_out = last_shifted_out_right(value, shift_amount);
+        return rotate_right<T>(value, shift_amount);
+    }
+};
+
+template <typename O>
+inline void inst_rox_mem_helper(machine_state& state, uint16_t opcode)
+{
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+
+    auto ptr = state.get_pointer<uint16_t>(mode, reg);
+    auto val = state.read<uint16_t>(ptr);
+
+    bool last_shifted_out = false;
+    auto result = O::template execute(val, 1, last_shifted_out);
+
+    state.set_status_register<bit::negative>(most_significant_bit(result));
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(false);
+    state.set_status_register<bit::carry>(last_shifted_out);
+
+    state.write<uint16_t>(ptr, result);
+}
+
+//
 // ROL, memory
 // Rotate left
 //
 
 void inst_rol_mem(machine_state& state, uint16_t opcode)
 {
-    // TODO
+    inst_rox_mem_helper<operation_rotate_left>(state, opcode);
 }
 
 //
@@ -1503,7 +1547,7 @@ void inst_rol_mem(machine_state& state, uint16_t opcode)
 
 void inst_ror_mem(machine_state& state, uint16_t opcode)
 {
-    // TODO
+    inst_rox_mem_helper<operation_rotate_right>(state, opcode);
 }
 
 //

@@ -48,6 +48,14 @@ void machine_state::set_program_counter(uint32_t value)
     m_registers.PC = value;
 }
 
+void machine_state::offset_program_counter(int32_t offset)
+{
+    int64_t pc = int64_t(m_registers.PC);
+    pc += int64_t(offset);
+    IF_FALSE_THROW(pc < 0 || pc > int64_t(m_memory_size), "Invalid program counter offset");
+    m_registers.PC = uint32_t(pc);
+}
+
 void machine_state::push_program_counter()
 {
     push<uint32_t>(m_registers.PC);

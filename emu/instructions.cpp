@@ -857,13 +857,12 @@ void inst_bcc(machine_state& state, uint16_t opcode)
 
     if (result)
     {
-        auto unused = extract_bits<8, 8>(opcode);
-        
-        auto displacement = state.next<uint16_t>();
-        
-        // TODO
-
-        //state.set_program_counter()
+        int32_t displacement = int8_t(extract_bits<8, 8>(opcode));
+        if (displacement == 0)
+        {
+            displacement = int32_t(state.next<int16_t>());
+        }
+        state.offset_program_counter(displacement);
     }
 }
 
@@ -1444,4 +1443,45 @@ void inst_lsl_mem(machine_state& state, uint16_t opcode)
 void inst_lsr_mem(machine_state& state, uint16_t opcode)
 {
     inst_lsx_mem_helper<operation_shift_right>(state, opcode);
+}
+
+//
+// BRA
+// Branch always
+//
+
+void inst_bra(machine_state& state, uint16_t opcode)
+{
+    int32_t displacement = int8_t(extract_bits<8, 8>(opcode));
+    if (displacement == 0)
+    {
+        displacement = int32_t(state.next<int16_t>());
+    }
+    state.offset_program_counter(displacement);
+}
+
+//
+// BSR
+// Branch to subroutine
+//
+
+void inst_bsr(machine_state& state, uint16_t opcode)
+{
+    int32_t displacement = int8_t(extract_bits<8, 8>(opcode));
+    if (displacement == 0)
+    {
+        displacement = int32_t(state.next<int16_t>());
+    }
+    state.push_program_counter();
+    state.offset_program_counter(displacement);
+}
+
+//
+// DBcc
+// Test condition, decrement and branch
+//
+
+void inst_dbcc(machine_state& state, uint16_t opcode)
+{
+    // TODO
 }

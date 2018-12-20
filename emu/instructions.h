@@ -52,6 +52,8 @@ void inst_rts(machine_state& state, uint16_t opcode);
 void inst_rtr(machine_state& state, uint16_t opcode);
 void inst_link(machine_state& state, uint16_t opcode);
 void inst_unlk(machine_state& state, uint16_t opcode);
+void inst_bra(machine_state& state, uint16_t opcode);
+void inst_bsr(machine_state& state, uint16_t opcode);
 
 //
 // Exceptions
@@ -72,6 +74,7 @@ void inst_pea(machine_state& state, uint16_t opcode);
 void inst_chk(machine_state& state, uint16_t opcode);
 void inst_scc(machine_state& state, uint16_t opcode);
 void inst_bcc(machine_state& state, uint16_t opcode);
+void inst_dbcc(machine_state& state, uint16_t opcode);
 void inst_ext(machine_state& state, uint16_t opcode);
 void inst_swap(machine_state& state, uint16_t opcode);
 void inst_tas(machine_state& state, uint16_t opcode);

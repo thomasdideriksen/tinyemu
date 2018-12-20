@@ -272,11 +272,6 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {2, "Fixed", {0x3}},
         {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
 
-    {"Bcc", inst_bcc, {
-        {4, "Fixed", {0x6}},
-        {4, "Condition", ALL},
-        {8, "Displacement", ALL}}},
-
     {"EXT", inst_ext, {
         {9, "Fixed", {0x91}},
         {1, "Size", {0 /* Word */, 1 /* Long */}},
@@ -369,7 +364,26 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {2, "Size", {0 /* Byte */, 1 /* Word */, 2 /* Long */}},
         {1, "Mode", {0 /* Immediate */, 1 /* Register */}},
         {2, "Fixed", {1}},
-        {3, "Data register", ALL}} },
+        {3, "Data register", ALL}}},
+
+    {"Bcc", inst_bcc, {
+        {4, "Fixed", {0x6}},
+        {4, "Condition", {0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf}},
+        {8, "Displacement", ALL}}},
+
+    {"DBcc", inst_dbcc, {
+        {4, "Fixed", {0x5}},
+        {4, "Condition", ALL},
+        {5, "Fixed", {0x19}},
+        {3, "Data register", ALL}}},
+
+    {"BRA", inst_bra, {
+        {8, "Fixed", {0x60}},
+        {8, "Displacement", ALL}}}, 
+
+    {"BSR", inst_bsr, {
+        {8, "Fixed", {0x61}},
+        {8, "Displacement", ALL}}},
 };
 
 void make_opcode_table_range(

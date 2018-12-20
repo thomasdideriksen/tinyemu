@@ -83,6 +83,7 @@ public:
     void load_program(size_t memory_offset, void* program, size_t program_size, uint32_t init_pc);
     void tick();
     void set_program_counter(uint32_t value);
+    void offset_program_counter(int32_t offset);
     void push_program_counter();
     void pop_program_counter();
     void push_status_register();

@@ -33,6 +33,8 @@ http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt <-- Overflow, car
 
 http://www.cse.dmu.ac.uk/~sexton/WWWPages/exceptions.html <-- Vector table
 
+https://en.wikipedia.org/wiki/Motorola_68000
+
 8, 32-bit data registers and 8, 32-bit address registers
 7 interrupt levels
 56 instructions

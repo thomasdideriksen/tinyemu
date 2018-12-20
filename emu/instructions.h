@@ -29,6 +29,18 @@ void inst_lsl_mem(machine_state& state, uint16_t opcode);
 void inst_lsl_reg(machine_state& state, uint16_t opcode);
 void inst_lsr_mem(machine_state& state, uint16_t opcode);
 void inst_lsr_reg(machine_state& state, uint16_t opcode);
+void inst_rol_mem(machine_state& state, uint16_t opcode);
+void inst_ror_mem(machine_state& state, uint16_t opcode);
+void inst_rol_reg(machine_state& state, uint16_t opcode);
+void inst_ror_reg(machine_state& state, uint16_t opcode);
+void inst_roxl_mem(machine_state& state, uint16_t opcode);
+void inst_roxr_mem(machine_state& state, uint16_t opcode);
+void inst_roxl_reg(machine_state& state, uint16_t opcode);
+void inst_roxr_reg(machine_state& state, uint16_t opcode);
+void inst_asl_mem(machine_state& state, uint16_t opcode);
+void inst_asr_mem(machine_state& state, uint16_t opcode);
+void inst_asl_reg(machine_state& state, uint16_t opcode);
+void inst_asr_reg(machine_state& state, uint16_t opcode);
 
 //
 // Arithmetic operators

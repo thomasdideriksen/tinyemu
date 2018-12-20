@@ -54,7 +54,7 @@ uint16_t make_addressing_mode(uint16_t mode, uint16_t reg, effective_address_ord
 }
 
 std::vector<uint16_t> make_addressing_modes(
-    uint32_t modes, 
+    uint32_t modes,
     effective_address_order order)
 {
     std::vector<uint16_t> result;
@@ -340,15 +340,15 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {5, "Operation", {0x8 /* D/D */, 0x9 /* A/A */, 0x11 /* D/A */}},
         {3, "Register 2 (prefer A)", ALL}}},
 
-    {"LSL (Memory)", inst_lsl_mem, {
+    {"LSL (memory)", inst_lsl_mem, {
         {10, "Fixed", {0x38f}},
         {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
 
-    {"LSR (Memory)", inst_lsr_mem, {
+    {"LSR (memory)", inst_lsr_mem, {
         {10, "Fixed", {0x38b}},
         {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
 
-    {"LSL (Register)", inst_lsl_reg, {
+    {"LSL (register)", inst_lsl_reg, {
         {4, "Fixed", {0xe}},
         {3, "Immediate or data register", ALL},
         {1, "Fixed", {1}},
@@ -357,13 +357,91 @@ std::vector<opcode_desc_t> opcode_descriptions = {
         {2, "Fixed", {1}},
         {3, "Data register", ALL}}},
 
-    {"LSR (Register)", inst_lsr_reg, {
+    {"LSR (register)", inst_lsr_reg, {
         {4, "Fixed", {0xe}},
         {3, "Immediate or data register", ALL},
         {1, "Fixed", {0}},
         {2, "Size", {0 /* Byte */, 1 /* Word */, 2 /* Long */}},
         {1, "Mode", {0 /* Immediate */, 1 /* Register */}},
         {2, "Fixed", {1}},
+        {3, "Data register", ALL}}},
+
+    {"ROL (memory)", inst_rol_mem, {
+        {10, "Fixed", {0x39f}},
+        {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
+
+    {"ROR (memory)", inst_ror_mem, {
+        {10, "Fixed", {0x39b}},
+        {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}} },
+
+    {"ROL (register)", inst_rol_reg, {
+        {4, "Fixed", {0xe}},
+        {3, "Immediate or data register", ALL},
+        {1, "Fixed", {1}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */, 2 /* Long */}},
+        {1, "Mode", {0 /* Immediate */, 1 /* Register */}},
+        {2, "Fixed", {3}},
+        {3, "Data register", ALL}} },
+
+    {"ROR (register)", inst_ror_reg, {
+        {4, "Fixed", {0xe}},
+        {3, "Immediate or data register", ALL},
+        {1, "Fixed", {0}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */, 2 /* Long */}},
+        {1, "Mode", {0 /* Immediate */, 1 /* Register */}},
+        {2, "Fixed", {3}},
+        {3, "Data register", ALL}} },
+
+    {"ROXL (memory)", inst_roxl_mem, {
+        {10, "Fixed", {0x397}},
+        {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
+
+    {"ROXR (memory)", inst_roxr_mem, {
+        {10, "Fixed", {0x393}},
+        {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
+
+    {"ROXL (register)", inst_roxl_reg, {
+        {4, "Fixed", {0xe}},
+        {3, "Immediate or data register", ALL},
+        {1, "Fixed", {1}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */, 2 /* Long */}},
+        {1, "Mode", {0 /* Immediate */, 1 /* Register */}},
+        {2, "Fixed", {2}},
+        {3, "Data register", ALL}}},
+
+    {"ROXR (register)", inst_roxr_reg, {
+        {4, "Fixed", {0xe}},
+        {3, "Immediate or data register", ALL},
+        {1, "Fixed", {0}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */, 2 /* Long */}},
+        {1, "Mode", {0 /* Immediate */, 1 /* Register */}},
+        {2, "Fixed", {2}},
+        {3, "Data register", ALL}}},
+
+    {"ASL (memory)", inst_asl_mem, {
+        {10, "Fixed", {0x387}},
+        {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
+
+    {"ASR (memory)", inst_asr_mem, {
+        {10, "Fixed", {0x383}},
+        {6, "Effective address, destination", ALL_MODES_EXCEPT(A | PcD | PcI | ImmSr)}}},
+
+    {"ASL (register)", inst_asl_reg, {
+        {4, "Fixed", {0xe}},
+        {3, "Immediate or data register", ALL},
+        {1, "Fixed", {1}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */, 2 /* Long */}},
+        {1, "Mode", {0 /* Immediate */, 1 /* Register */}},
+        {2, "Fixed", {0}},
+        {3, "Data register", ALL}}},
+
+    {"ASR (register)", inst_asr_reg, {
+        {4, "Fixed", {0xe}},
+        {3, "Immediate or data register", ALL},
+        {1, "Fixed", {0}},
+        {2, "Size", {0 /* Byte */, 1 /* Word */, 2 /* Long */}},
+        {1, "Mode", {0 /* Immediate */, 1 /* Register */}},
+        {2, "Fixed", {0}},
         {3, "Data register", ALL}}},
 
     {"Bcc", inst_bcc, {
@@ -379,7 +457,7 @@ std::vector<opcode_desc_t> opcode_descriptions = {
 
     {"BRA", inst_bra, {
         {8, "Fixed", {0x60}},
-        {8, "Displacement", ALL}}}, 
+        {8, "Displacement", ALL}}},
 
     {"BSR", inst_bsr, {
         {8, "Fixed", {0x61}},
@@ -387,8 +465,8 @@ std::vector<opcode_desc_t> opcode_descriptions = {
 };
 
 void make_opcode_table_range(
-    const opcode_desc_t& desc, 
-    std::unordered_map<uint16_t, std::string>& mnemonics, 
+    const opcode_desc_t& desc,
+    std::unordered_map<uint16_t, std::string>& mnemonics,
     inst_func_ptr_t* table_ptr)
 {
     struct item_t

@@ -45,6 +45,7 @@ void machine_state::tick()
 
 void machine_state::set_program_counter(uint32_t value)
 {
+    IF_FALSE_THROW(value < m_memory_size, "Invalid program counter value: " << value);
     m_registers.PC = value;
 }
 
@@ -52,7 +53,7 @@ void machine_state::offset_program_counter(int32_t offset)
 {
     int64_t pc = int64_t(m_registers.PC);
     pc += int64_t(offset);
-    IF_FALSE_THROW(pc < 0 || pc > int64_t(m_memory_size), "Invalid program counter offset");
+    IF_FALSE_THROW(pc < 0 || pc > int64_t(m_memory_size), "Invalid program counter offset value: " << offset);
     m_registers.PC = uint32_t(pc);
 }
 

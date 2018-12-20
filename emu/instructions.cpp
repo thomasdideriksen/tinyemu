@@ -1307,7 +1307,7 @@ void inst_exg(machine_state& state, uint16_t opcode)
 }
 
 //
-// Helper: LSx, Register
+// Helper: LSx, register
 //
 
 struct operation_shift_left
@@ -1379,7 +1379,7 @@ inline void inst_lsx_reg_helper(machine_state& state, uint16_t opcode)
 }
 
 //
-// LSL, Register
+// LSL, register
 // Logical left shift
 //
 
@@ -1390,7 +1390,7 @@ void inst_lsl_reg(machine_state& state, uint16_t opcode)
 }
 
 //
-// LSR, Register
+// LSR, register
 // Logical right shift
 //
 
@@ -1426,7 +1426,7 @@ inline void inst_lsx_mem_helper(machine_state& state, uint16_t opcode)
 }
 
 //
-// LSL, Memory
+// LSL, memory
 // Logical shift left
 //
 
@@ -1436,7 +1436,7 @@ void inst_lsl_mem(machine_state& state, uint16_t opcode)
 }
 
 //
-// LSR, Memory
+// LSR, memory
 // Logical shift right
 //
 
@@ -1482,6 +1482,126 @@ void inst_bsr(machine_state& state, uint16_t opcode)
 //
 
 void inst_dbcc(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ROL, memory
+// Rotate left
+//
+
+void inst_rol_mem(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ROR, memory
+// Rotate right
+//
+
+void inst_ror_mem(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ROL, register
+// Rotate left
+//
+
+void inst_rol_reg(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ROR, register
+// Rotate right
+//
+
+void inst_ror_reg(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ROXL, memory
+// Rotate left with extend
+//
+
+void inst_roxl_mem(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ROXR, memory
+// Rotate right with extend
+// 
+
+void inst_roxr_mem(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ROXL, register
+// Rotate left with extend
+//
+
+void inst_roxl_reg(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ROXR, register
+// Rotate right with extend
+//
+
+void inst_roxr_reg(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ASL, memory
+// Arithmetic shift left
+//
+
+void inst_asl_mem(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ASR, memory
+// Arithmetic shift right
+//
+
+void inst_asr_mem(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ASL, register
+// Arithmetic shift left
+//
+
+void inst_asl_reg(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ASR, register
+// Arithmetic shift right
+//
+
+void inst_asr_reg(machine_state& state, uint16_t opcode)
 {
     // TODO
 }

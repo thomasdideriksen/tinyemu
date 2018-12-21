@@ -1310,145 +1310,6 @@ void inst_exg(machine_state& state, uint16_t opcode)
 }
 
 //
-// Helper: LSx, register
-//
-
-struct operation_shift_left
-{
-    template <typename T>
-    static T execute(T value, uint32_t shift_amount, bool& last_shifted_out)
-    {
-        last_shifted_out = last_shifted_out_left(value, shift_amount);
-        return value << shift_amount;
-    }
-};
-
-struct operation_shift_right
-{
-    template <typename T>
-    static T execute(T value, uint32_t shift_amount, bool& last_shifted_out)
-    {
-        last_shifted_out = last_shifted_out_right(value, shift_amount);
-        return value >> shift_amount;
-    }
-};
-
-template <typename T, typename O>
-inline void inst_lsx_reg_helper(machine_state& state, uint16_t opcode)
-{
-    uint32_t shift_amount = 0;
-
-    auto rotation = extract_bits<4, 3>(opcode);
-    auto mode = extract_bits<10, 1>(opcode);
-
-    switch (mode)
-    {
-    case 0: // Immediate
-        shift_amount = rotation;
-        break;
-    case 1: // Data register
-        shift_amount = state.read<uint32_t>(state.get_pointer<uint32_t>(0, rotation));
-        break;
-    default:
-        THROW("Invalid mode");
-    }
-
-    // Modulo 64
-    shift_amount &= 0x3f;
-
-    auto reg = extract_bits<13, 3>(opcode);
-    auto ptr = state.get_pointer<T>(0, reg);
-    auto val = state.read<T>(ptr);
-
-    bool last_shifted_out = false;
-    T result = O::template execute<T>(val, shift_amount, last_shifted_out);
-
-    if (shift_amount > 0)
-    {
-        state.set_status_register<bit::extend>(last_shifted_out);
-        state.set_status_register<bit::carry>(last_shifted_out);
-    }
-    else
-    {
-        // The X (extend) bit is unaffected if the shift amount is zero, but C (carry) is cleared
-        state.set_status_register<bit::carry>(false);
-    }
-    
-    state.set_status_register<bit::negative>(is_negative(result));
-    state.set_status_register<bit::zero>(result == 0);
-    state.set_status_register<bit::overflow>(false);
-
-    state.write<T>(ptr, result);
-}
-
-//
-// LSL, register
-// Logical left shift
-//
-
-void inst_lsl_reg(machine_state& state, uint16_t opcode)
-{
-    auto size = extract_bits<8, 2>(opcode);
-    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_lsx_reg_helper, operation_shift_left);
-}
-
-//
-// LSR, register
-// Logical right shift
-//
-
-void inst_lsr_reg(machine_state& state, uint16_t opcode)
-{
-    auto size = extract_bits<8, 2>(opcode);
-    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_lsx_reg_helper, operation_shift_right);
-}
-
-//
-// Helper: LSx, Memory
-//
-
-template <typename O>
-inline void inst_lsx_mem_helper(machine_state& state, uint16_t opcode)
-{
-    auto mode = extract_bits<10, 3>(opcode);
-    auto reg = extract_bits<13, 3>(opcode);
-
-    auto ptr = state.get_pointer<uint16_t>(mode, reg);
-    uint16_t val = state.read<uint16_t>(ptr);
-
-    bool last_shifted_out = false;
-    uint16_t result = O::template execute<uint16_t>(val, 1, last_shifted_out);
-
-    state.set_status_register<bit::extend>(last_shifted_out);
-    state.set_status_register<bit::negative>(is_negative(result));
-    state.set_status_register<bit::zero>(result == 0);
-    state.set_status_register<bit::overflow>(false);
-    state.set_status_register<bit::carry>(last_shifted_out);
-
-    state.write<uint16_t>(ptr, result);
-}
-
-//
-// LSL, memory
-// Logical shift left
-//
-
-void inst_lsl_mem(machine_state& state, uint16_t opcode)
-{
-    inst_lsx_mem_helper<operation_shift_left>(state, opcode);
-}
-
-//
-// LSR, memory
-// Logical shift right
-//
-
-void inst_lsr_mem(machine_state& state, uint16_t opcode)
-{
-    inst_lsx_mem_helper<operation_shift_right>(state, opcode);
-}
-
-//
 // BRA
 // Branch always
 //
@@ -1490,28 +1351,52 @@ void inst_dbcc(machine_state& state, uint16_t opcode)
 }
 
 //
-// Helper: ROx, memory
+// Helpers: Shift/rotate operations
 //
 
 struct operation_rotate_left
 {
     template <typename T>
-    static T execute(T value, uint32_t shift_amount, bool& last_shifted_out)
+    static T execute(T value, uint32_t shift, bool& last_shifted_out)
     {
-        last_shifted_out = last_shifted_out_left(value, shift_amount);
-        return rotate_left<T>(value, shift_amount);
+        last_shifted_out = last_shifted_out_left(value, shift);
+        return rotate_left<T>(value, shift);
     }
 };
 
 struct operation_rotate_right
 {
     template <typename T>
-    static T execute(T value, uint32_t shift_amount, bool& last_shifted_out)
+    static T execute(T value, uint32_t shift, bool& last_shifted_out)
     {
-        last_shifted_out = last_shifted_out_right(value, shift_amount);
-        return rotate_right<T>(value, shift_amount);
+        last_shifted_out = last_shifted_out_right(value, shift);
+        return rotate_right<T>(value, shift);
     }
 };
+
+struct operation_shift_left
+{
+    template <typename T>
+    static T execute(T value, uint32_t shift, bool& last_shifted_out)
+    {
+        last_shifted_out = last_shifted_out_left(value, shift);
+        return value << shift;
+    }
+};
+
+struct operation_shift_right
+{
+    template <typename T>
+    static T execute(T value, uint32_t shift, bool& last_shifted_out)
+    {
+        last_shifted_out = last_shifted_out_right(value, shift);
+        return value >> shift;
+    }
+};
+
+//
+// Helper: ROx, memory
+//
 
 template <typename O>
 inline void inst_rox_mem_helper(machine_state& state, uint16_t opcode)
@@ -1523,7 +1408,7 @@ inline void inst_rox_mem_helper(machine_state& state, uint16_t opcode)
     auto val = state.read<uint16_t>(ptr);
 
     bool last_shifted_out = false;
-    auto result = O::template execute(val, 1, last_shifted_out);
+    auto result = O::template execute<uint16_t>(val, 1, last_shifted_out);
 
     state.set_status_register<bit::negative>(most_significant_bit(result));
     state.set_status_register<bit::zero>(result == 0);
@@ -1531,6 +1416,197 @@ inline void inst_rox_mem_helper(machine_state& state, uint16_t opcode)
     state.set_status_register<bit::carry>(last_shifted_out);
 
     state.write<uint16_t>(ptr, result);
+}
+
+//
+// Helper ROXx, memory
+//
+template <typename O>
+inline void inst_roxx_mem_helper(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// Helper: LSx, Memory
+//
+
+template <typename O>
+inline void inst_lsx_mem_helper(machine_state& state, uint16_t opcode)
+{
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+
+    auto ptr = state.get_pointer<uint16_t>(mode, reg);
+    uint16_t val = state.read<uint16_t>(ptr);
+
+    bool last_shifted_out = false;
+    uint16_t result = O::template execute<uint16_t>(val, 1, last_shifted_out);
+
+    state.set_status_register<bit::extend>(last_shifted_out);
+    state.set_status_register<bit::negative>(is_negative(result));
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(false);
+    state.set_status_register<bit::carry>(last_shifted_out);
+
+    state.write<uint16_t>(ptr, result);
+}
+
+//
+// Helper: ASx, memory
+//
+
+template <typename O>
+inline void int_asx_mem_helper(machine_state& state, uint16_t opcode)
+{
+    auto mode = extract_bits<10, 3>(opcode);
+    auto reg = extract_bits<13, 3>(opcode);
+
+    auto ptr = state.get_pointer<uint16_t>(mode, reg);
+    auto val = state.read<int16_t>((int16_t*)ptr);
+
+    bool last_shifted_out = false;
+    auto result = O::template execute<uint16_t>(val, 1, last_shifted_out);
+    bool msr_changed = most_significant_bit(val) != most_significant_bit(result);
+
+    state.set_status_register<bit::extend>(last_shifted_out);
+    state.set_status_register<bit::negative>(most_significant_bit(result));
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(msr_changed);
+    state.set_status_register<bit::carry>(last_shifted_out);
+
+    state.write<uint16_t>(ptr, uint16_t(result));
+}
+
+//
+// Helper: Get shift value
+//
+
+inline uint32_t get_shift(machine_state& state, uint16_t opcode)
+{
+    auto rotation = extract_bits<4, 3>(opcode);
+    auto mode = extract_bits<10, 1>(opcode);
+    uint32_t shift = 0;
+
+    switch (mode)
+    {
+    case 0: shift = uint32_t(rotation); break; // Immediate
+    case 1: shift = state.read<uint32_t>(state.get_pointer<uint32_t>(0, rotation)); break; // Data register
+    default:
+        THROW("Invalid mode");
+    }
+
+    return shift & 0x3f; // Modulo 64
+}
+
+//
+// Helper: ROx, register
+//
+
+template <typename T, typename O>
+inline void inst_rox_reg_helper(machine_state& state, uint16_t opcode)
+{
+    uint32_t shift = get_shift(state, opcode);
+
+    auto reg = extract_bits<13, 3>(opcode);
+    auto ptr = state.get_pointer<T>(0, reg);
+    auto val = state.read<T>(ptr);
+
+    bool last_shifted_out = false;
+    T result = O::template execute<T>(val, shift, last_shifted_out);
+
+    state.set_status_register<bit::negative>(most_significant_bit(result));
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(false);
+    state.set_status_register<bit::carry>((shift == 0) ? false : last_shifted_out);
+
+    state.write<T>(ptr, result);
+}
+
+//
+// Helper: LSx, register
+//
+
+template <typename T, typename O>
+inline void inst_lsx_reg_helper(machine_state& state, uint16_t opcode)
+{
+    uint32_t shift = get_shift(state, opcode);
+
+    auto reg = extract_bits<13, 3>(opcode);
+    auto ptr = state.get_pointer<T>(0, reg);
+    auto val = state.read<T>(ptr);
+
+    bool last_shifted_out = false;
+    T result = O::template execute<T>(val, shift, last_shifted_out);
+
+    if (shift > 0)
+    {
+        state.set_status_register<bit::extend>(last_shifted_out);
+        state.set_status_register<bit::carry>(last_shifted_out);
+    }
+    else
+    {
+        // The X (extend) bit is unaffected if the shift amount is zero, but C (carry) is cleared
+        state.set_status_register<bit::carry>(false);
+    }
+
+    state.set_status_register<bit::negative>(is_negative(result));
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(false);
+
+    state.write<T>(ptr, result);
+}
+
+//
+// Helper: ASx, register
+//
+
+template <typename T, typename O>
+inline void inst_asx_reg_helper(machine_state& state, uint16_t opcode)
+{
+    uint32_t shift = get_shift(state, opcode);
+
+    auto reg = extract_bits<13, 3>(opcode);
+    auto ptr = state.get_pointer<T>(0, reg);
+    auto val = state.read<T>(ptr);
+
+    bool last_shifted_out = false;
+    T result = O::template execute<T>(val, shift, last_shifted_out);
+    bool msr_changed = most_significant_bit(val) != most_significant_bit(result);
+
+    if (shift > 0)
+    {
+        state.set_status_register<bit::extend>(last_shifted_out);
+        state.set_status_register<bit::carry>(last_shifted_out);
+    }
+
+    state.set_status_register<bit::negative>(most_significant_bit(result));
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(msr_changed);
+
+    state.write<T>(ptr, result);
+}
+
+//
+// ROL, register
+// Rotate left
+//
+
+void inst_rol_reg(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_rox_reg_helper, operation_rotate_left);
+}
+
+//
+// ROR, register
+// Rotate right
+//
+
+void inst_ror_reg(machine_state& state, uint16_t opcode)
+{
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_rox_reg_helper, operation_rotate_right);
 }
 
 //
@@ -1554,21 +1630,21 @@ void inst_ror_mem(machine_state& state, uint16_t opcode)
 }
 
 //
-// ROL, register
-// Rotate left
+// ROXL, register
+// Rotate left with extend
 //
 
-void inst_rol_reg(machine_state& state, uint16_t opcode)
+void inst_roxl_reg(machine_state& state, uint16_t opcode)
 {
     // TODO
 }
 
 //
-// ROR, register
-// Rotate right
+// ROXR, register
+// Rotate right with extend
 //
 
-void inst_ror_reg(machine_state& state, uint16_t opcode)
+void inst_roxr_reg(machine_state& state, uint16_t opcode)
 {
     // TODO
 }
@@ -1594,43 +1670,45 @@ void inst_roxr_mem(machine_state& state, uint16_t opcode)
 }
 
 //
-// ROXL, register
-// Rotate left with extend
+// LSL, register
+// Logical left shift
 //
 
-void inst_roxl_reg(machine_state& state, uint16_t opcode)
+void inst_lsl_reg(machine_state& state, uint16_t opcode)
 {
-    // TODO
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_lsx_reg_helper, operation_shift_left);
 }
 
 //
-// ROXR, register
-// Rotate right with extend
+// LSR, register
+// Logical right shift
 //
 
-void inst_roxr_reg(machine_state& state, uint16_t opcode)
+void inst_lsr_reg(machine_state& state, uint16_t opcode)
 {
-    // TODO
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_lsx_reg_helper, operation_shift_right);
 }
 
 //
-// ASL, memory
-// Arithmetic shift left
+// LSL, memory
+// Logical shift left
 //
 
-void inst_asl_mem(machine_state& state, uint16_t opcode)
+void inst_lsl_mem(machine_state& state, uint16_t opcode)
 {
-    // TODO
+    inst_lsx_mem_helper<operation_shift_left>(state, opcode);
 }
 
 //
-// ASR, memory
-// Arithmetic shift right
+// LSR, memory
+// Logical shift right
 //
 
-void inst_asr_mem(machine_state& state, uint16_t opcode)
+void inst_lsr_mem(machine_state& state, uint16_t opcode)
 {
-    // TODO
+    inst_lsx_mem_helper<operation_shift_right>(state, opcode);
 }
 
 //
@@ -1640,7 +1718,8 @@ void inst_asr_mem(machine_state& state, uint16_t opcode)
 
 void inst_asl_reg(machine_state& state, uint16_t opcode)
 {
-    // TODO
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_asx_reg_helper, operation_shift_left);
 }
 
 //
@@ -1650,5 +1729,26 @@ void inst_asl_reg(machine_state& state, uint16_t opcode)
 
 void inst_asr_reg(machine_state& state, uint16_t opcode)
 {
-    // TODO
+    auto size = extract_bits<8, 2>(opcode);
+    PROCESS_SIZE_WITH_TEMPLATE_PARAM(size, inst_asx_reg_helper, operation_shift_right);
+}
+
+//
+// ASL, memory
+// Arithmetic shift left
+//
+
+void inst_asl_mem(machine_state& state, uint16_t opcode)
+{
+    int_asx_mem_helper<operation_shift_left>(state, opcode);
+}
+
+//
+// ASR, memory
+// Arithmetic shift right
+//
+
+void inst_asr_mem(machine_state& state, uint16_t opcode)
+{
+    int_asx_mem_helper<operation_shift_right>(state, opcode);
 }

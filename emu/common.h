@@ -68,7 +68,8 @@ inline bool is_negative(T value)
 template <typename T>
 inline bool most_significant_bit(T value)
 {
-    return (value >> (traits<T>::bits - 1)) != 0;
+    typedef std::make_unsigned<T>::type unsigned_t;
+    return (unsigned_t(value) >> ((sizeof(T) * 8) - 1)) != 0;
 }
 
 template <typename T>
@@ -94,13 +95,15 @@ inline T negate(T value)
 template <typename T>
 inline bool last_shifted_out_left(T value, uint32_t shift)
 {
-    return ((value >> (traits<T>::bits - shift)) & 0x1) != 0;
+    typedef std::make_unsigned<T>::type unsigned_t;
+    return ((unsigned_t(value) >> ((sizeof(T) * 8) - shift)) & 0x1) != 0;
 }
 
 template <typename T>
 inline bool last_shifted_out_right(T value, uint32_t shift)
 {
-    return ((value >> (shift - 1)) & 0x1) != 0;
+    typedef std::make_unsigned<T>::type unsigned_t;
+    return ((unsigned_t(value) >> (shift - 1)) & 0x1) != 0;
 }
 
 // TODO: Move/abstract intrinsics invocations to platform specific file

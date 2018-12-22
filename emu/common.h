@@ -43,10 +43,24 @@ struct traits<uint32_t>
     static const uint32_t bits = 32;
 };
 
-template <const int bit_offset, const int bit_count>
-constexpr inline uint16_t extract_bits(uint16_t src)
+//template <const int bit_offset, const int bit_count>
+//constexpr inline uint16_t extract_bits(uint16_t src)
+//{
+//    return (src >> (16 - bit_offset - bit_count)) & (0xffff >> (16 - bit_count));
+//}
+
+template <uint32_t val>
+inline constexpr uint32_t swap_effective_address()
 {
-    return (src >> (16 - bit_offset - bit_count)) & (0xffff >> (16 - bit_count));
+    auto lower = val & 0x3;
+    auto upper = (val >> 3) & 0x3;
+    return upper | (lower << 3);
+}
+
+template <uint32_t mode, uint32_t reg>
+inline constexpr uint32_t make_effective_address()
+{
+    return reg | (mode << 3);
 }
 
 template <typename T>

@@ -9,13 +9,8 @@
 template <typename T, uint16_t src, uint16_t dst>
 void move(machine_state& state)
 {
-    const auto dst_reg = extract_bits<0, 3>(dst);
-    const auto dst_mode = extract_bits<3, 3>(dst);
-    const auto src_mode = extract_bits<0, 3>(src);
-    const auto src_reg = extract_bits<3, 3>(src);
-
-    T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
-    T* dst_ptr = state.get_pointer<T>(dst_mode, dst_reg);
+    T* src_ptr = state.get_pointer<T>(src);
+    T* dst_ptr = state.get_pointer<T>(swap_effective_address<dst>());
 
     T result = state.read(src_ptr);
 

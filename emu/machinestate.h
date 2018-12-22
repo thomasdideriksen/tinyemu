@@ -88,7 +88,7 @@ public:
     template <typename T>
     inline void push(T value)
     {
-        uint32_t* stack_ptr = get_pointer<uint32_t>(1, 7);
+        uint32_t* stack_ptr = get_pointer<uint32_t>(make_effective_address<1, 7>());
         uint32_t stack_value = read(stack_ptr);
         int64_t new_stack_value = int64_t(stack_value) - int64_t(sizeof(T));
         IF_FALSE_THROW(new_stack_value >= 0, "Stack overflow");
@@ -99,7 +99,7 @@ public:
     template <typename T>
     inline T pop()
     {
-        uint32_t* stack_ptr = get_pointer<uint32_t>(1, 7);
+        uint32_t* stack_ptr = get_pointer<uint32_t>(make_effective_address<1, 7>());
         uint32_t stack_value = read(stack_ptr);
         T* mem_ptr = (T*)&m_memory[stack_value];
         T result = read(mem_ptr);
@@ -170,8 +170,11 @@ public:
     }
 
     template <typename T, const bool use_imm = true>
-    __forceinline T* get_pointer(uint32_t mode, uint32_t reg)
+    __forceinline T* get_pointer(uint32_t effective_address)
     {
+        auto reg = effective_address & 0x7;
+        auto mode = (effective_address >> 3) & 0x7;
+
         switch (mode)
         {
         case 0: // Data register direct

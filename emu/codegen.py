@@ -54,15 +54,26 @@ def getTemplateParams(opcode, bitPattern):
                 param = piece['mapping'][str(param)]
             result.append(param)
     return result
-        
-with open('opcodes.json', 'r') as f:
-    opcodes = json.load(f)
 
-with open('generated.cpp', 'w') as f:
-    for opcode in opcodes:
-        bitPatterns = makeBitPatterns(opcode, 0, 0, 0)
-        for bitPattern in bitPatterns:
-            templateParams = getTemplateParams(opcode, bitPattern)
-            code = 'table[{:#06x}] = {}<{}' + ', {}' * (len(templateParams) - 1) + '>;\n'
-            code = code.format(bitPattern, opcode['name'], *templateParams)
-            f.write(code);
+try:
+
+    with open('opcodes.json', 'r') as f:
+        opcodes = json.load(f)
+
+    with open('generated.cpp', 'w') as f:
+        occupied = {}
+        for opcode in opcodes:
+            bitPatterns = makeBitPatterns(opcode, 0, 0, 0)
+            for bitPattern in bitPatterns:
+                if bitPattern in occupied:
+                    conflict = occupied[bitPattern]
+                    raise Exception('Bit pattern ({:016b}) for [{}] is already in use by [{}]'.format(bitPattern, opcode['name'], conflict['name']))
+                occupied[bitPattern] = opcode
+                templateParams = getTemplateParams(opcode, bitPattern)
+                code = 'table[{:#06x}] = {}<{}' + ', {}' * (len(templateParams) - 1) + '>;\n'
+                code = code.format(bitPattern, opcode['name'], *templateParams)
+                f.write(code);
+
+except Exception as ex:
+    print('error: {}'.format(ex))
+    sys.exit(1)

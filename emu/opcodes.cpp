@@ -7,6 +7,8 @@
 #include "common.h"
 #include "instructions.h"
 
+#if false
+
 struct opcode_part_desc_t
 {
     uint32_t bit_count;
@@ -537,3 +539,12 @@ void make_opcode_table(std::vector<inst_func_ptr_t>& table)
     }
     std::cout << "Opcode table occupancy: " << set_count << " of " << table.size() << std::endl;
 }
+#else
+
+void make_opcode_table(std::vector<inst_func_ptr_t>& table)
+{
+    table.resize(0xffff + 1);
+#include "generated.cpp"
+}
+
+#endif

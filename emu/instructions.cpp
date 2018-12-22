@@ -2,6 +2,8 @@
 #include "common.h"
 #include "machinestate.h"
 
+#if false
+
 #define PROCESS_SIZE(size, helper)\
     switch (size) {\
     case 0: ##helper<uint8_t>(state, opcode); break;\
@@ -1752,3 +1754,6 @@ void inst_asr_mem(machine_state& state, uint16_t opcode)
 {
     int_asx_mem_helper<operation_shift_right>(state, opcode);
 }
+
+
+#endif

@@ -19,7 +19,7 @@ enum class bit
 };
 
 class machine_state;
-typedef void(*inst_func_ptr_t)(machine_state&, uint16_t);
+typedef void(*inst_func_ptr_t)(machine_state&);
 
 class machine_state
 {
@@ -170,7 +170,7 @@ public:
     }
 
     template <typename T, const bool use_imm = true>
-    inline T* get_pointer(uint32_t mode, uint32_t reg)
+    __forceinline T* get_pointer(uint32_t mode, uint32_t reg)
     {
         switch (mode)
         {

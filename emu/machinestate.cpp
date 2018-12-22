@@ -40,7 +40,7 @@ void machine_state::tick()
     auto opcode = next<uint16_t>();
     auto inst_func = m_opcode_table[opcode];
     IF_FALSE_THROW(inst_func != nullptr, "Invalid or unimplemented opcode: 0x" << std::hex << opcode << std::dec << " (" << std::bitset<16>(opcode) << ")");
-    inst_func(*this, opcode);
+    inst_func(*this);
 }
 
 void machine_state::set_program_counter(uint32_t value)

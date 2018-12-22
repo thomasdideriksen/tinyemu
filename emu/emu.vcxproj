@@ -30,6 +30,10 @@
     <ClInclude Include="machinestate.h" />
     <ClInclude Include="opcodes.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="codegen.py" />
+    <None Include="opcodes.json" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{ADDC4081-4A40-4FD5-B157-E9E683D36D98}</ProjectGuid>
@@ -108,6 +112,12 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PreBuildEvent>
+      <Command>python $(ProjectDir)codegen.py</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Generate opcode table</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -123,6 +133,12 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PreBuildEvent>
+      <Command>python $(ProjectDir)codegen.py</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Generate opcode table</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -142,6 +158,12 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PreBuildEvent>
+      <Command>python $(ProjectDir)codegen.py</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Generate opcode table</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -161,6 +183,12 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PreBuildEvent>
+      <Command>python $(ProjectDir)codegen.py</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Generate opcode table</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

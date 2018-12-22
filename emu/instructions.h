@@ -5,6 +5,54 @@
 //
 // Move
 //
+
+template <typename T, uint16_t src, uint16_t dst>
+void move(machine_state& state)
+{
+    const auto dst_reg = extract_bits<0, 3>(dst);
+    const auto dst_mode = extract_bits<3, 3>(dst);
+    const auto src_mode = extract_bits<0, 3>(src);
+    const auto src_reg = extract_bits<3, 3>(src);
+
+    T* src_ptr = state.get_pointer<T>(src_mode, src_reg);
+    T* dst_ptr = state.get_pointer<T>(dst_mode, dst_reg);
+
+    T result = state.read(src_ptr);
+
+    state.set_status_register<bit::negative>(is_negative(result));
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(false);
+    state.set_status_register<bit::carry>(false);
+
+    state.write(dst_ptr, result);
+}
+
+template <uint16_t dst, uint16_t data>
+void moveq(machine_state& state)
+{
+
+}
+
+template <typename T, uint16_t dst, uint16_t src>
+void movea(machine_state& state)
+{
+
+}
+
+template <uint16_t dir, typename T, uint16_t src>
+void movem(machine_state& state)
+{
+
+}
+
+template <uint16_t src, uint16_t dir, typename T, uint16_t dst>
+void movep(machine_state& state)
+{
+
+}
+
+
+#if false
 void inst_move(machine_state& state, uint16_t opcode);
 void inst_moveq(machine_state& state, uint16_t opcode);
 void inst_movea(machine_state& state, uint16_t opcode);
@@ -94,3 +142,5 @@ void inst_tst(machine_state& state, uint16_t opcode);
 void inst_reset(machine_state& state, uint16_t opcode);
 void inst_nop(machine_state& state, uint16_t opcode);
 void inst_exg(machine_state& state, uint16_t opcode);
+
+#endif

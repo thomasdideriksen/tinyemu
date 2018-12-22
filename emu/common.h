@@ -44,7 +44,7 @@ struct traits<uint32_t>
 };
 
 template <const int bit_offset, const int bit_count>
-inline uint16_t extract_bits(uint16_t src)
+constexpr inline uint16_t extract_bits(uint16_t src)
 {
     return (src >> (16 - bit_offset - bit_count)) & (0xffff >> (16 - bit_count));
 }

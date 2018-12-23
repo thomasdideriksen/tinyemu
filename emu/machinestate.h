@@ -18,8 +18,17 @@ enum class bit
     // Note: Interrupt mask is bit 8, 9 and 10
 };
 
+enum class reg
+{
+    status_register,
+    user_stack_pointer,
+    supervisor_stack_pointer,
+};
+
 class machine_state;
 typedef void(*inst_func_ptr_t)(machine_state&);
+
+#define CHECK_SUPERVISOR(state) if (!state.get_status_bit<bit::supervisor>()) { state.exception(8 /* Privilege violation */); return; }
 
 class machine_state
 {
@@ -43,12 +52,12 @@ private:
     uint32_t m_storage[4];
     uint32_t m_storage_index;
 
-    inline uint32_t* get_address_register_pointer(uint32_t reg)
+    INLINE uint32_t* get_address_register_pointer(uint32_t reg)
     {
         // Note: Adress register 7 is special: It refers to the user *or* supervisor stack pointer, depending on the current CPU mode
         if (reg == 7)
         {
-            return (uint32_t*)(get_status_register<bit::supervisor>() ? &m_registers.SSP : &m_registers.USP);
+            return (uint32_t*)(get_status_bit<bit::supervisor>() ? &m_registers.SSP : &m_registers.USP);
         }
         else
         {
@@ -57,7 +66,7 @@ private:
     }
 
     template <typename T>
-    inline T* get_next_storage_pointer()
+    INLINE T* get_next_storage_pointer()
     {
         T* ptr = (T*)&m_storage[m_storage_index % countof(m_storage)];
         m_storage_index++;
@@ -65,7 +74,7 @@ private:
     }
 
     template <typename T>
-    inline bool is_memory(T* ptr)
+    INLINE bool is_memory(T* ptr)
     {
         return ((uint8_t*)ptr >= m_memory && (uint8_t*)ptr < (m_memory + m_memory_size));
     }
@@ -86,7 +95,7 @@ public:
     void set_condition_code_register(uint8_t ccr);
 
     template <typename T>
-    inline void push(T value)
+    INLINE void push(T value)
     {
         uint32_t* stack_ptr = get_pointer<uint32_t>(make_effective_address<1, 7>());
         uint32_t stack_value = read(stack_ptr);
@@ -97,7 +106,7 @@ public:
     }
 
     template <typename T>
-    inline T pop()
+    INLINE T pop()
     {
         uint32_t* stack_ptr = get_pointer<uint32_t>(make_effective_address<1, 7>());
         uint32_t stack_value = read(stack_ptr);
@@ -109,14 +118,14 @@ public:
     }
 
     template <typename T>
-    inline uint32_t pointer_to_memory_offset(T* ptr)
+    INLINE uint32_t pointer_to_memory_offset(T* ptr)
     {
         IF_FALSE_THROW(is_memory(ptr), "Invalid memory pointer");
         return uint32_t(size_t(ptr) - size_t(m_memory));
     }
 
     template <typename T>
-    inline void write(T* dst, T value)
+    INLINE void write(T* dst, T value)
     {
         if (is_memory(dst))
         {
@@ -129,7 +138,7 @@ public:
     }
 
     template <typename T>
-    inline T read(T* src)
+    INLINE T read(T* src)
     {
         if (is_memory(src))
         {
@@ -142,7 +151,7 @@ public:
     }
 
     template <typename T>
-    T next()
+    INLINE T next()
     {
         T* ptr = (T*)&m_memory[m_registers.PC];
         m_registers.PC += sizeof(T);
@@ -150,13 +159,13 @@ public:
     }
 
     template <const bit bit>
-    inline bool get_status_register()
+    INLINE bool get_status_bit()
     {
         return ((m_registers.SR >> uint32_t(bit)) & 0x1) != 0;
     }
 
     template <const bit bit>
-    inline void set_status_register(bool value)
+    INLINE void set_status_bit(bool value)
     {
         uint16_t mask = 1 << uint32_t(bit);
         if (value)
@@ -169,8 +178,21 @@ public:
         }
     }
 
-    template <typename T, const bool use_imm = true>
-    __forceinline T* get_pointer(uint32_t effective_address)
+    template <typename T>
+    INLINE T* get_pointer(reg reg)
+    {
+        switch (reg)
+        {
+        case reg::status_register: return (T*)&m_registers.SR;
+        case reg::supervisor_stack_pointer: return (T*)&m_registers.SSP;
+        case reg::user_stack_pointer: return (T*)&m_registers.USP;
+        default:
+            THROW("Invalid register");
+        }
+    }
+
+    template <typename T>
+    INLINE T* get_pointer(uint32_t effective_address)
     {
         auto reg = effective_address & 0x7;
         auto mode = (effective_address >> 3) & 0x7;
@@ -245,17 +267,12 @@ public:
                 THROW("Unimplemented addressing mode: " << mode);
 
             case 4: // Immediate or status register
-                if (use_imm)
-                {
-                    typedef traits<T>::extension_word_type_t extension_t;
-                    extension_t* ptr = get_next_storage_pointer<extension_t>();
-                    *ptr = next<extension_t>();
-                    return (T*)ptr;
-                }
-                else
-                {
-                    return (T*)&m_registers.SR;
-                }
+            {
+                typedef traits<T>::extension_word_type_t extension_t;
+                extension_t* ptr = get_next_storage_pointer<extension_t>();
+                *ptr = next<extension_t>();
+                return (T*)ptr;
+            }
 
             default:
                 THROW("Invalid register value for adressing mode 7: " << reg);

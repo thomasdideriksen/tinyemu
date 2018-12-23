@@ -32,7 +32,7 @@ void machine_state::load_program(size_t memory_offset, void* program, size_t pro
     ::memset(&m_registers, 0x0, sizeof(m_registers));
     ::memcpy(&m_memory[memory_offset], program, program_size);
     set_program_counter(init_pc);
-    set_status_register<bit::supervisor>(true); // Initialize the CPU in supervisor mode
+    set_status_bit<bit::supervisor>(true); // Initialize the CPU in supervisor mode
 }
 
 void machine_state::tick()
@@ -81,7 +81,7 @@ void machine_state::exception(uint32_t vector_index)
 {
     push_program_counter();
     push_status_register();
-    set_status_register<bit::supervisor>(true);
+    set_status_bit<bit::supervisor>(true);
 
     uint32_t* vector_table = (uint32_t*)m_memory;
     uint32_t vector_offset = read(vector_table + vector_index);

@@ -8,6 +8,8 @@
 #define IF_FALSE_THROW(expr, msg) { if (!(expr)) { THROW(msg); } }
 #define countof(arr) (sizeof(arr) / sizeof(arr[0]))
 
+#define INLINE __forceinline
+
 template <typename T>
 struct traits {};
 
@@ -50,7 +52,7 @@ struct traits<uint32_t>
 //}
 
 template <uint32_t val>
-inline constexpr uint32_t swap_effective_address()
+INLINE constexpr uint32_t swap_effective_address()
 {
     auto lower = val & 0x3;
     auto upper = (val >> 3) & 0x3;
@@ -58,18 +60,18 @@ inline constexpr uint32_t swap_effective_address()
 }
 
 template <uint32_t mode, uint32_t reg>
-inline constexpr uint32_t make_effective_address()
+INLINE constexpr uint32_t make_effective_address()
 {
     return reg | (mode << 3);
 }
 
-inline uint32_t make_effective_address(uint32_t mode, uint32_t reg)
+INLINE uint32_t make_effective_address(uint32_t mode, uint32_t reg)
 {
     return reg | (mode << 3);
 }
 
 template <typename T>
-inline uint32_t sign_extend(const T& value)
+INLINE uint32_t sign_extend(const T& value)
 { 
     typedef traits<T>::signed_type_t signed_t;
     signed_t* ptr = (signed_t*)&value;
@@ -77,7 +79,7 @@ inline uint32_t sign_extend(const T& value)
 }
 
 template <typename T>
-inline bool is_negative(T value)
+INLINE bool is_negative(T value)
 {
     typedef traits<T>::signed_type_t signed_t;
     signed_t* ptr = (signed_t*)&value;
@@ -85,20 +87,20 @@ inline bool is_negative(T value)
 }
 
 template <typename T>
-inline bool most_significant_bit(T value)
+INLINE bool most_significant_bit(T value)
 {
     typedef std::make_unsigned<T>::type unsigned_t;
     return (unsigned_t(value) >> ((sizeof(T) * 8) - 1)) != 0;
 }
 
 template <typename T>
-inline bool has_carry(T higher_precision_result)
+INLINE bool has_carry(T higher_precision_result)
 {
     return ((higher_precision_result >> (sizeof(T) * 4)) & 0x1) != 0;
 }
 
 template <typename T>
-inline bool has_overflow(T op0, T op1, T result)
+INLINE bool has_overflow(T op0, T op1, T result)
 {
     bool op0_negative = is_negative(op0);
     bool op1_negative = is_negative(op1);
@@ -106,20 +108,20 @@ inline bool has_overflow(T op0, T op1, T result)
 }
 
 template <typename T>
-inline T negate(T value)
+INLINE T negate(T value)
 {
     return (~value) + 1;
 }
 
 template <typename T>
-inline bool last_shifted_out_left(T value, uint32_t shift)
+INLINE bool last_shifted_out_left(T value, uint32_t shift)
 {
     typedef std::make_unsigned<T>::type unsigned_t;
     return ((unsigned_t(value) >> ((sizeof(T) * 8) - shift)) & 0x1) != 0;
 }
 
 template <typename T>
-inline bool last_shifted_out_right(T value, uint32_t shift)
+INLINE bool last_shifted_out_right(T value, uint32_t shift)
 {
     typedef std::make_unsigned<T>::type unsigned_t;
     return ((unsigned_t(value) >> (shift - 1)) & 0x1) != 0;
@@ -128,7 +130,7 @@ inline bool last_shifted_out_right(T value, uint32_t shift)
 // TODO: Move/abstract intrinsics invocations to platform specific file
 
 template <typename T>
-inline T swap(T value)
+INLINE T swap(T value)
 {
     switch (sizeof(T))
     {
@@ -141,7 +143,7 @@ inline T swap(T value)
 }
 
 template <typename T>
-inline T rotate_left(T value, uint8_t shift)
+INLINE T rotate_left(T value, uint8_t shift)
 {
     switch (sizeof(T))
     {
@@ -154,7 +156,7 @@ inline T rotate_left(T value, uint8_t shift)
 }
 
 template <typename T>
-inline T rotate_right(T value, uint8_t shift)
+INLINE T rotate_right(T value, uint8_t shift)
 {
     switch (sizeof(T))
     {

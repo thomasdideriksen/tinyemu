@@ -14,12 +14,82 @@ void move(machine_state& state)
 
     T result = state.read(src_ptr);
 
-    state.set_status_register<bit::negative>(is_negative(result));
-    state.set_status_register<bit::zero>(result == 0);
-    state.set_status_register<bit::overflow>(false);
-    state.set_status_register<bit::carry>(false);
+    state.set_status_bit<bit::negative>(is_negative(result));
+    state.set_status_bit<bit::zero>(result == 0);
+    state.set_status_bit<bit::overflow>(false);
+    state.set_status_bit<bit::carry>(false);
 
     state.write(dst_ptr, result);
+}
+
+//
+// MOVE from SR
+//
+
+template <uint16_t dst>
+void move_from_sr(machine_state& state)
+{
+    auto src_ptr = state.get_pointer<uint16_t>(reg::status_register);
+    auto dst_ptr = state.get_pointer<uint16_t>(dst);
+    auto result = state.read(src_ptr);
+    state.write(dst_ptr, result);
+}
+
+//
+// MOVE to CCR
+// 
+
+template <uint16_t src>
+void move_to_ccr(machine_state& state)
+{
+    auto src_ptr = state.get_pointer<uint8_t>(src);
+    auto dst_ptr = state.get_pointer<uint8_t>(reg::status_register);
+    auto result = state.read(src_ptr);
+    state.write(dst_ptr, result);
+}
+
+//
+// MOVE to SR
+//
+
+template <uint16_t src>
+void move_to_sr(machine_state& state)
+{
+    CHECK_SUPERVISOR(state);
+    auto src_ptr = state.get_pointer<uint16_t>(src);
+    auto dst_ptr = state.get_pointer<uint16_t>(reg::status_register);
+    auto result = state.read(src_ptr);
+    state.write(dst_ptr, result);
+}
+
+//
+// MOVE USP
+//
+template <uint16_t dir, uint16_t ea>
+void move_usp(machine_state& state)
+{
+    CHECK_SUPERVISOR(state);
+    auto reg_ptr = state.get_pointer<uint32_t>(reg::user_stack_pointer);
+    auto mem_ptr = state.get_pointer<uint32_t>(ea);
+    switch (dir)
+    {
+    case 0: // Register to memory
+    {
+        auto result = state.read(reg_ptr);
+        state.write(mem_ptr, result);
+    }
+    break;
+
+    case 1: // Memory to register
+    {
+        auto result = state.read(mem_ptr);
+        state.write(reg_ptr, result);
+    }
+    break;
+
+    default:
+        THROW("Invalid direction");
+    }
 }
 
 //
@@ -32,10 +102,10 @@ void moveq(machine_state& state)
     auto dst_ptr = state.get_pointer<uint32_t>(make_effective_address<0, dst>());
     auto result = sign_extend(data);
 
-    state.set_status_register<bit::negative>(is_negative(result));
-    state.set_status_register<bit::zero>(result == 0);
-    state.set_status_register<bit::overflow>(false);
-    state.set_status_register<bit::carry>(false);
+    state.set_status_bit<bit::negative>(is_negative(result));
+    state.set_status_bit<bit::zero>(result == 0);
+    state.set_status_bit<bit::overflow>(false);
+    state.set_status_bit<bit::carry>(false);
 
     state.write(dst_ptr, result);
 }

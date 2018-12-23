@@ -63,6 +63,11 @@ inline constexpr uint32_t make_effective_address()
     return reg | (mode << 3);
 }
 
+inline uint32_t make_effective_address(uint32_t mode, uint32_t reg)
+{
+    return reg | (mode << 3);
+}
+
 template <typename T>
 inline uint32_t sign_extend(const T& value)
 { 

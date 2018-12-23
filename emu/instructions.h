@@ -3,7 +3,7 @@
 #include "machinestate.h"
 
 //
-// Move
+// MOVE
 //
 
 template <typename T, uint16_t src, uint16_t dst>
@@ -22,28 +22,106 @@ void move(machine_state& state)
     state.write(dst_ptr, result);
 }
 
+//
+// MOVEQ
+//
+
 template <uint16_t dst, uint16_t data>
 void moveq(machine_state& state)
-{
+{   
+    auto dst_ptr = state.get_pointer<uint32_t>(make_effective_address<0, dst>());
+    auto result = sign_extend(data);
 
+    state.set_status_register<bit::negative>(is_negative(result));
+    state.set_status_register<bit::zero>(result == 0);
+    state.set_status_register<bit::overflow>(false);
+    state.set_status_register<bit::carry>(false);
+
+    state.write(dst_ptr, result);
 }
+
+//
+// MOVEA
+//
 
 template <typename T, uint16_t dst, uint16_t src>
 void movea(machine_state& state)
 {
-
+    auto src_ptr = state.get_pointer<T>(src);
+    auto dst_ptr = state.get_pointer<uint32_t>(make_effective_address<1, dst>());
+    auto val = state.read<T>(src_ptr);
+    state.write<uint32_t>(dst_ptr, sign_extend(val));
 }
+
+//
+// MOVEM
+//
 
 template <uint16_t dir, typename T, uint16_t src>
 void movem(machine_state& state)
 {
+    auto register_select = state.next<uint16_t>(); // Note: Get this first so we don't interfere with addressing modes, etc.
+    auto mem_mode = (src >> 3) & 0x7;
 
+    int32_t delta = 1;
+    int32_t begin = 0;
+
+    if (dir == 0 /* Register to memory */ && mem_mode == 4 /* Address register indirect with predecrement */)
+    {
+        // Note: With pre-decrement addressing mode the registers are stored in inverse order (A7-A0, D7-D0)
+        delta = -1;
+        begin = 15;
+    }
+
+    for (int32_t counter = 0, i = begin; counter < 16; counter++, i += delta)
+    {
+        const uint32_t mask = (1 << i);
+
+        if ((mask & register_select) != 0)
+        {
+            uint32_t reg_mode = (i >> 3) & 0x1;
+            uint32_t reg_reg = i & 0x7;
+
+            T* reg = state.get_pointer<T>(make_effective_address(reg_mode, reg_reg));
+            T* mem = state.get_pointer<T>(src);
+
+            switch (dir)
+            {
+            case 0: // Register to memory 
+                state.write(mem, state.read(reg));
+                break;
+            case 1: // Memory to register
+                state.write((uint32_t*)reg, sign_extend(state.read(mem)));
+                break;
+            default:
+                THROW("Invalid direction");
+            }
+        }
+    }
 }
+
+//
+// MOVEP
+//
 
 template <uint16_t src, uint16_t dir, typename T, uint16_t dst>
 void movep(machine_state& state)
 {
+    auto reg_ptr = state.get_pointer<uint8_t>(make_effective_address<0, src>()) + sizeof(T) - 1; // Note: Endian
+    auto mem_ptr = state.get_pointer<uint8_t>(make_effective_address<2, dst>()) + state.next<int16_t>();
 
+    for (uint32_t i = 0; i < sizeof(T); i++)
+    {
+        switch (dir)
+        {
+        case 0: state.write<uint8_t>(reg_ptr, state.read<uint8_t>(mem_ptr)); break; // Memory to register
+        case 1: state.write<uint8_t>(mem_ptr, state.read<uint8_t>(reg_ptr)); break; // Register to memory
+        default:
+            THROW("Invalid direction");
+        }
+        mem_ptr += 2;
+        reg_ptr -= 1;  // Note: Endian
+    }
 }
 
 

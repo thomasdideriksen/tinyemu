@@ -194,6 +194,10 @@ void movep(machine_state& state)
     }
 }
 
+//
+// CLR
+//
+
 template <typename T, uint16_t ea>
 void clr(machine_state& state)
 {
@@ -207,8 +211,12 @@ void clr(machine_state& state)
     state.write(ptr, T(0x0));
 }
 
+//
+// Helper: ADD
+//
+
 template <typename T>
-inline void add_helper(machine_state& state, T* src, T* dst)
+INLINE void add_helper(machine_state& state, T* src, T* dst)
 {
     auto src_val = state.read<T>(src);
     auto dst_val = state.read<T>(dst);
@@ -235,6 +243,10 @@ inline void add_helper(machine_state& state, T* src, T* dst)
     state.write<T>(dst, result);
 }
 
+//
+// ADD (write to D register)
+//
+
 template <uint16_t reg, typename T, uint16_t ea>
 void add_write_to_data_register(machine_state& state)
 {
@@ -243,12 +255,75 @@ void add_write_to_data_register(machine_state& state)
     add_helper<T>(state, src, dst);
 }
 
+//
+// ADD (write to EA)
+//
+
 template <uint16_t reg, typename T, uint16_t ea>
 void add_write_to_effective_address(machine_state& state)
 {
     T* src = state.get_pointer<T>(make_effective_address<0, reg>());
     T* dst = state.get_pointer<T>(ea);
     add_helper<T>(state, src, dst);
+}
+
+//
+// Helper: ADDI, SUBI
+//
+
+template <typename T, uint16_t ea, typename O>
+INLINE void arithmetic_imm_helper(machine_state& state)
+{
+    T* dst_ptr = state.get_pointer<T>(ea);
+    T dst = state.read(dst_ptr);
+
+    typedef traits<T>::extension_word_type_t extension_t;
+    auto imm = state.next<extension_t>();
+
+    typedef traits<T>::higher_precision_type_t high_precision_t;
+
+    high_precision_t result_high_precision =
+        O::template execute<high_precision_t>(
+            high_precision_t(dst),
+            high_precision_t(imm));
+
+    T result = T(result_high_precision);
+
+    bool carry = has_carry(result_high_precision);
+    bool negative = is_negative(result);
+    bool zero = (result == 0);
+    bool overflow = has_overflow<T>(dst, T(imm), result);
+
+    state.set_status_bit<bit::extend>(carry);
+    state.set_status_bit<bit::negative>(negative);
+    state.set_status_bit<bit::zero>(zero);
+    state.set_status_bit<bit::overflow>(overflow);
+    state.set_status_bit<bit::carry>(carry);
+
+    state.write(dst_ptr, result);
+}
+
+struct operation_sub { template <typename T> static T execute(T a, T b) { return a - b; } };
+struct operation_add { template <typename T> static T execute(T a, T b) { return a + b; } };
+
+//
+// ADDI
+//
+
+template <typename T, uint16_t ea>
+void addi(machine_state& state)
+{
+    arithmetic_imm_helper<T, ea, operation_add>(state);
+}
+
+//
+// SUBI
+//
+
+template <typename T, uint16_t ea>
+void subi(machine_state& state)
+{
+    arithmetic_imm_helper<T, ea, operation_sub>(state);
 }
 
 

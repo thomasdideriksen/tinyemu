@@ -1,3 +1,4 @@
+import sys
 import json
 
 def makeModeBitPattern(mode, reg, swapped):

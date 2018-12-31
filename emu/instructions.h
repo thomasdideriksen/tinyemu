@@ -194,6 +194,63 @@ void movep(machine_state& state)
     }
 }
 
+template <typename T, uint16_t ea>
+void clr(machine_state& state)
+{
+    T* ptr = state.get_pointer<T>(ea);
+
+    state.set_status_bit<bit::negative>(false);
+    state.set_status_bit<bit::zero>(true);
+    state.set_status_bit<bit::overflow>(false);
+    state.set_status_bit<bit::carry>(false);
+
+    state.write(ptr, T(0x0));
+}
+
+template <typename T>
+inline void add_helper(machine_state& state, T* src, T* dst)
+{
+    auto src_val = state.read<T>(src);
+    auto dst_val = state.read<T>(dst);
+
+    typedef traits<T>::higher_precision_type_t high_precision_t;
+
+    high_precision_t result_high_precision = 
+        high_precision_t(src_val) + 
+        high_precision_t(dst_val);
+
+    T result = T(result_high_precision);
+
+    bool carry = has_carry(result_high_precision);
+    bool negative = is_negative(result);
+    bool zero = (result == 0);
+    bool overflow = has_overflow(src_val, dst_val, result);
+
+    state.set_status_bit<bit::extend>(carry);
+    state.set_status_bit<bit::negative>(negative);
+    state.set_status_bit<bit::zero>(zero);
+    state.set_status_bit<bit::overflow>(overflow);
+    state.set_status_bit<bit::carry>(carry);
+
+    state.write<T>(dst, result);
+}
+
+template <uint16_t reg, typename T, uint16_t ea>
+void add_write_to_data_register(machine_state& state)
+{
+    T* src = state.get_pointer<T>(ea);
+    T* dst = state.get_pointer<T>(make_effective_address<0, reg>());
+    add_helper<T>(state, src, dst);
+}
+
+template <uint16_t reg, typename T, uint16_t ea>
+void add_write_to_effective_address(machine_state& state)
+{
+    T* src = state.get_pointer<T>(make_effective_address<0, reg>());
+    T* dst = state.get_pointer<T>(ea);
+    add_helper<T>(state, src, dst);
+}
+
 
 #if false
 void inst_move(machine_state& state, uint16_t opcode);

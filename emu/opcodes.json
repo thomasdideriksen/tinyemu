@@ -1,0 +1,99 @@
+[
+    {
+        "name": "move",
+        "pattern": [
+            {"bits": 2, "valid": [0]},
+            {"bits": 2, "name": "Size", "valid": [1, 2, 3], "mapping": {"1": "uint8_t", "2": "uint32_t", "3": "uint16_t"}},
+            {"bits": 6, "name": "Destination", "modes": [0, 2, 3, 4, 5, 6, 7, 8], "swapped": true},
+            {"bits": 6, "name": "Source", "modes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "move_from_sr",
+        "pattern": [
+            {"bits": 10, "valid": [259]},
+            {"bits": 6, "modes": [0, 2, 3, 4, 5, 6, 7, 8]}]
+    },
+    {
+        "name": "move_to_ccr",
+        "pattern": [
+            {"bits": 10, "valid": [275]},
+            {"bits": 6, "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "move_to_sr",
+        "pattern": [
+            {"bits": 10, "valid": [283]},
+            {"bits": 6, "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "move_usp",
+        "pattern": [
+            {"bits": 12, "valid": [1254]},
+            {"bits": 1, "name": "Direction"},
+            {"bits": 3, "name": "Source (A)"}]
+    },
+    {
+        "name": "moveq",
+        "pattern": [
+            {"bits": 4, "valid": [7]},
+            {"bits": 3, "name": "Destination (D)"},
+            {"bits": 1, "valid": [0]},
+            {"bits": 8, "name": "Data"}]
+    },
+    {
+        "name": "movea",
+        "pattern": [
+            {"bits": 2, "valid": [0]},
+            {"bits": 2, "name": "Size", "valid": [2, 3], "mapping": {"2" :"uint32_t", "3": "uint16_t"}},
+            {"bits": 3, "name": "Destination (A)"},
+            {"bits": 3, "valid": [1]},
+            {"bits": 6, "name": "Source", "modes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "movem",
+        "pattern": [
+            {"bits": 5, "valid": [9]},
+            {"bits": 1, "name": "Direction"},
+            {"bits": 3, "valid": [1]},
+            {"bits": 1, "name": "Size", "mapping": {"0": "uint16_t", "1": "uint32_t"}},
+            {"bits": 6, "name": "Source", "modes": [2, 3, 5, 6, 7, 8, 9, 10]}]
+    },
+    {
+        "name": "movep",
+        "pattern": [
+            {"bits": 4, "valid": [0]},
+            {"bits": 3, "name": "Source (D)"},
+            {"bits": 1, "valid": [1]},
+            {"bits": 1, "name": "Direction"},
+            {"bits": 1, "name": "Size", "mapping": {"0": "uint16_t", "1": "uint32_t"}},
+            {"bits": 3, "valid": [1]},
+            {"bits": 3, "name": "Destination (A)"}]
+    },
+    {
+        "name": "clr",
+        "pattern": [
+            {"bits": 8, "valid": [66]},
+            {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}},
+            {"bits": 6, "modes": [0, 2, 3, 4, 5, 6, 7, 8]}]
+    },
+    {
+        "name": "add_write_to_data_register",
+        "pattern": [
+            {"bits": 4, "valid": [13]},
+            {"bits": 3, "name": "Register (D)"},
+            {"bits": 1, "valid": [0]},
+            {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}
+        ]
+    },
+    {
+        "name": "add_write_to_effective_address",
+        "pattern": [
+            {"bits": 4, "valid": [13]},
+            {"bits": 3, "name": "Register (D)"},
+            {"bits": 1, "valid": [1]},
+            {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8]}
+        ]
+    }
+]

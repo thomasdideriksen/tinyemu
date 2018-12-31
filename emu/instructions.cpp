@@ -608,7 +608,7 @@ void inst_subq(machine_state& state, uint16_t opcode)
 // Return from exception handler
 //
 
-void inst_rte(machine_state& state, uint16_t opcode)
+void inst_rte(machine_state& state, uint16_t opcoclrde)
 {
     if (!state.get_status_register<bit::supervisor>())
     {

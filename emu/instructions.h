@@ -282,8 +282,7 @@ INLINE void arithmetic_imm_helper(machine_state& state)
 
     typedef traits<T>::higher_precision_type_t high_precision_t;
 
-    high_precision_t result_high_precision =
-        O::template execute<high_precision_t>(
+    high_precision_t result_high_precision = O::template execute<high_precision_t>(
             high_precision_t(dst),
             high_precision_t(imm));
 
@@ -325,6 +324,120 @@ void subi(machine_state& state)
 {
     arithmetic_imm_helper<T, ea, operation_sub>(state);
 }
+
+//
+// Helper: ADDQ, SUBQ
+//
+template <uint16_t data, typename T, uint16_t dst, typename O>
+INLINE void arithmetic_quick_helper(machine_state& state)
+{
+    auto ptr = state.get_pointer<T>(dst);
+    auto val = state.read(ptr);
+
+    if (is_address_register(uint32_t(dst)))
+    {
+        uint32_t result = O::template execute<uint32_t>(
+            uint32_t(val),
+            uint32_t(data));
+
+        state.write<uint32_t>((uint32_t*)ptr, result);
+    }
+    else
+    {
+        typedef traits<T>::higher_precision_type_t high_precision_t;
+
+        high_precision_t result_high_precision = O::template execute<high_precision_t>(
+            high_precision_t(val),
+            high_precision_t(data));
+
+        T result = T(result_high_precision);
+
+        bool carry = has_carry(result_high_precision);
+        bool negative = is_negative(result);
+        bool zero = (result == 0);
+        bool overflow = has_overflow<T>(val, T(data), result);
+
+        state.set_status_bit<bit::extend>(carry);
+        state.set_status_bit<bit::negative>(negative);
+        state.set_status_bit<bit::zero>(zero);
+        state.set_status_bit<bit::overflow>(overflow);
+        state.set_status_bit<bit::carry>(carry);
+
+        state.write(ptr, result);
+    }
+}
+
+//
+// ADDQ
+//
+template <uint16_t data, typename T, uint16_t dst>
+void addq(machine_state& state)
+{
+    arithmetic_quick_helper<data, T, dst, operation_add>(state);
+}
+
+//
+// SUBQ
+//
+template <uint16_t data, typename T, uint16_t dst>
+void subq(machine_state& state)
+{
+    arithmetic_quick_helper<data, T, dst, operation_sub>(state);
+}
+
+//
+// Helper: ADDA, SUBA
+//
+template <uint16_t dst, typename T, uint16_t src_ea, typename O>
+void arithmetic_address_helper(machine_state& state)
+{
+    auto dst_ptr = state.get_pointer<uint32_t>(make_effective_address<1, dst>());
+    auto src_ptr = state.get_pointer<T>(src_ea);
+
+    auto dst_val = state.read(dst_ptr);
+    auto src_val = state.read(src_ptr);
+
+    auto src_val_sign_extended = sign_extend(src_val);
+    auto result = O::template execute<uint32_t>(dst_val, src_val_sign_extended);
+
+    state.write(dst_ptr, result);
+}
+
+//
+// ADDA
+//
+
+template <uint16_t dst, typename T, uint16_t src_ea>
+void adda(machine_state& state)
+{
+    arithmetic_address_helper<dst, T, src_ea, operation_add>(state);
+}
+
+//
+// SUBA
+//
+
+template <uint16_t dst, typename T, uint16_t src_ea>
+void suba(machine_state& state)
+{
+    arithmetic_address_helper<dst, T, src_ea, operation_sub>(state);
+}
+
+//
+// ADDX
+//
+
+template <uint16_t dst, typename T, uint16_t mode, uint16_t src>
+void addx(machine_state& state)
+{
+
+}
+
+//
+// SUBX
+//
+
+
 
 
 #if false

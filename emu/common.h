@@ -168,3 +168,8 @@ INLINE T rotate_right(T value, uint8_t shift)
     }
 }
 
+INLINE constexpr bool is_address_register(uint32_t effective_address)
+{
+    auto mode = (effective_address >> 3) & 0x7;
+    return mode > 0 && mode < 7; // Modes 1, 2, 3, 4, 5, 6 are all affecting address registers
+}

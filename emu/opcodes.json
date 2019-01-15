@@ -92,7 +92,7 @@
             {"bits": 3, "name": "Register (D)"},
             {"bits": 1, "valid": [1]},
             {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}},
-            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8]}]
+            {"bits": 6, "name": "Effective Address", "modes": [2, 3, 4, 5, 6, 7, 8]}]
     },
     {
         "name": "addi",
@@ -107,5 +107,52 @@
             {"bits": 8, "valid": [4]},
             {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}},
             {"bits": 6, "name": "Effective Address", "mode": [0, 2, 3, 4, 5, 6, 7, 8]}]
+    },
+    {
+        "name": "addq",
+        "pattern": [
+            {"bits": 4, "valid": [5]},
+            {"bits": 3, "name": "Data"},
+            {"bits": 1, "valid": [0]},
+            {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}},
+            {"bits": 6, "name": "Effective Address", "mode": [0, 1, 2, 3, 4, 5, 6, 7, 8]}]
+    },
+    {
+        "name": "subq",
+        "pattern": [
+            {"bits": 4, "valid": [5]},
+            {"bits": 3, "name": "Data"},
+            {"bits": 1, "valid": [1]},
+            {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}},
+            {"bits": 6, "name": "Effective Address", "mode": [0, 1, 2, 3, 4, 5, 6, 7, 8]}]
+    },
+    {
+        "name": "adda",
+        "pattern": [
+            {"bits": 4, "valid": [13]},
+            {"bits": 3, "name": "Destination Address Register"},
+            {"bits": 1, "name": "Size", "valid": [0, 1], "mapping": {"0": "uint16_t", "1": "uint32_t"}},
+            {"bits": 2, "valid": [3]},
+            {"bits": 6, "name": "Source Effective Address", "mode": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "suba",
+        "pattern": [
+            {"bits": 4, "valid": [9]},
+            {"bits": 3, "name": "Destination Address Register"},
+            {"bits": 1, "name": "Size", "valid": [0, 1], "mapping": {"0": "uint16_t", "1": "uint32_t"}},
+            {"bits": 2, "valid": [3]},
+            {"bits": 6, "name": "Source Effective Address", "mode": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "addx",
+        "pattern": [
+            {"bits": 4, "valid": [13]},
+            {"bits": 3, "name": "Destination Register"},
+            {"bits": 1, "valid": [1]},
+            {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}},
+            {"bits": 2, "valid": [0]},
+            {"bits": 1, "name": "Mode", "valid": [0, 1]},
+            {"bits": 3, "name": "Source Register"}]
     }
 ]

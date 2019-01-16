@@ -183,5 +183,10 @@
             {"bits": 2, "valid": [0]},
             {"bits": 1, "name": "Mode", "valid": [0, 1]},
             {"bits": 3, "name": "Source Register"}]
+    },
+    {
+        "name": "ori_to_ccr",
+        "pattern": [
+            {"bits": 16, "valid": [60]}]
     }
 ]

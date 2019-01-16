@@ -71,8 +71,11 @@ try:
                     raise Exception('Bit pattern ({:016b}) for [{}] is already in use by [{}]'.format(bitPattern, opcode['name'], conflict['name']))
                 occupied[bitPattern] = opcode
                 templateParams = getTemplateParams(opcode, bitPattern)
-                code = 'table[{:#06x}] = {}<{}' + ', {}' * (len(templateParams) - 1) + '>;\n'
-                code = code.format(bitPattern, opcode['name'], *templateParams)
+                if len(templateParams) == 0:
+                    code = 'table[{:#06x}] = {};\n'.format(bitPattern, opcode['name'])
+                else:
+                    code = 'table[{:#06x}] = {}<{}' + ', {}' * (len(templateParams) - 1) + '>;\n'
+                    code = code.format(bitPattern, opcode['name'], *templateParams)
                 f.write(code);
 
 except Exception as ex:

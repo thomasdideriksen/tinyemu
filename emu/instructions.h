@@ -508,6 +508,13 @@ void subx(machine_state& state)
     arithmetic_extended_helper<dst, T, mode, src, operation_sub>(state);
 }
 
+//
+// ORI to CCR
+//
+void ori_to_ccr(machine_state& state)
+{
+
+}
 
 #if false
 void inst_move(machine_state& state, uint16_t opcode);

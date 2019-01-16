@@ -401,7 +401,7 @@ void subq(machine_state& state)
 // Helper: ADDA, SUBA
 //
 template <uint16_t dst, typename T, uint16_t src_ea, typename O>
-void arithmetic_address_helper(machine_state& state)
+INLINE void arithmetic_address_helper(machine_state& state)
 {
     auto dst_ptr = state.get_pointer<uint32_t>(make_effective_address<1, dst>());
     auto src_ptr = state.get_pointer<T>(src_ea);
@@ -440,7 +440,7 @@ void suba(machine_state& state)
 //
 
 template <uint16_t dst, typename T, uint16_t mode, uint16_t src, typename O>
-void arithmetic_extended_helper(machine_state& state)
+INLINE void arithmetic_extended_helper(machine_state& state)
 {
     T *src_ptr, *dst_ptr;
 

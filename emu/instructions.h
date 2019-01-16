@@ -211,21 +211,40 @@ void clr(machine_state& state)
     state.write(ptr, T(0x0));
 }
 
+struct operation_sub { template <typename T> static T execute(T a, T b) { return a - b; } };
+struct operation_add { template <typename T> static T execute(T a, T b) { return a + b; } };
+
 //
-// Helper: ADD
+// Helper: ADD, SUB
 //
 
-template <typename T>
-INLINE void add_helper(machine_state& state, T* src, T* dst)
+template <uint16_t reg, uint16_t mode, typename T, uint16_t ea, typename O>
+INLINE void arithmetic_helper(machine_state& state)
 {
+    T *src, *dst;
+
+    switch (mode)
+    {
+    case 0: // Write to D register
+        src = state.get_pointer<T>(ea);
+        dst = state.get_pointer<T>(make_effective_address<0, reg>());
+        break;
+    case 1: // Write to effective address
+        src = state.get_pointer<T>(make_effective_address<0, reg>());
+        dst = state.get_pointer<T>(ea);
+        break;
+    default:
+        THROW("Invalid mode");
+    }
+
     auto src_val = state.read<T>(src);
     auto dst_val = state.read<T>(dst);
 
     typedef traits<T>::higher_precision_type_t high_precision_t;
 
-    high_precision_t result_high_precision = 
-        high_precision_t(src_val) + 
-        high_precision_t(dst_val);
+    high_precision_t result_high_precision = O::template execute<high_precision_t>(
+        high_precision_t(src_val), 
+        high_precision_t(dst_val));
 
     T result = T(result_high_precision);
 
@@ -244,27 +263,23 @@ INLINE void add_helper(machine_state& state, T* src, T* dst)
 }
 
 //
-// ADD (write to D register)
+// ADD
 //
 
-template <uint16_t reg, typename T, uint16_t ea>
-void add_write_to_data_register(machine_state& state)
+template <uint16_t reg, uint16_t mode, typename T, uint16_t ea>
+void add(machine_state& state)
 {
-    T* src = state.get_pointer<T>(ea);
-    T* dst = state.get_pointer<T>(make_effective_address<0, reg>());
-    add_helper<T>(state, src, dst);
+    arithmetic_helper<reg, mode, T, ea, operation_add>(state);
 }
 
 //
-// ADD (write to EA)
+// SUB
 //
 
-template <uint16_t reg, typename T, uint16_t ea>
-void add_write_to_effective_address(machine_state& state)
+template <uint16_t reg, uint16_t mode, typename T, uint16_t ea>
+void sub(machine_state& state)
 {
-    T* src = state.get_pointer<T>(make_effective_address<0, reg>());
-    T* dst = state.get_pointer<T>(ea);
-    add_helper<T>(state, src, dst);
+    arithmetic_helper<reg, mode, T, ea, operation_sub>(state);
 }
 
 //
@@ -301,9 +316,6 @@ INLINE void arithmetic_imm_helper(machine_state& state)
 
     state.write(dst_ptr, result);
 }
-
-struct operation_sub { template <typename T> static T execute(T a, T b) { return a - b; } };
-struct operation_add { template <typename T> static T execute(T a, T b) { return a + b; } };
 
 //
 // ADDI
@@ -424,20 +436,77 @@ void suba(machine_state& state)
 }
 
 //
+// Helper: ADDX, SUBX
+//
+
+template <uint16_t dst, typename T, uint16_t mode, uint16_t src, typename O>
+void arithmetic_extended_helper(machine_state& state)
+{
+    T *src_ptr, *dst_ptr;
+
+    switch (mode)
+    {
+    case 0: // Data register direct (0)
+        src_ptr = state.get_pointer<T>(make_effective_address<0, src>());
+        dst_ptr = state.get_pointer<T>(make_effective_address<0, dst>());
+        break;
+    case 1: // Address register indirect with predecrement (4)
+        src_ptr = state.get_pointer<T>(make_effective_address<4, src>());
+        dst_ptr = state.get_pointer<T>(make_effective_address<4, dst>());
+        break;
+    default:
+        THROW("Invalid mode");
+    }
+
+    auto src_val = state.read(src_ptr);
+    auto dst_val = state.read(dst_ptr);
+    auto extend = state.get_status_bit<bit::extend>() ? 1 : 0;
+
+    typedef traits<T>::higher_precision_type_t high_precision_t;
+
+    high_precision_t tmp = 
+        O::template execute<high_precision_t>(high_precision_t(src_val), high_precision_t(dst_val));
+    
+    high_precision_t result_high_precision =
+        O::template execute<high_precision_t>(high_precision_t(tmp), high_precision_t(extend));
+
+    T result = T(result_high_precision);
+
+    bool carry = has_carry(result_high_precision);
+    bool negative = is_negative(result);
+    bool zero = (result == 0);
+    bool overflow =
+        has_overflow<T>(src_val, dst_val, T(tmp)) ||
+        has_overflow<T>(T(tmp), extend, result);
+
+    state.set_status_bit<bit::extend>(carry);
+    state.set_status_bit<bit::negative>(negative);
+    state.set_status_bit<bit::zero>(zero);
+    state.set_status_bit<bit::overflow>(overflow);
+    state.set_status_bit<bit::carry>(carry);
+
+    state.write(dst_ptr, result);
+}
+
+//
 // ADDX
 //
 
 template <uint16_t dst, typename T, uint16_t mode, uint16_t src>
 void addx(machine_state& state)
 {
-
+    arithmetic_extended_helper<dst, T, mode, src, operation_add>(state);
 }
 
 //
 // SUBX
 //
 
-
+template <uint16_t dst, typename T, uint16_t mode, uint16_t src>
+void subx(machine_state& state)
+{
+    arithmetic_extended_helper<dst, T, mode, src, operation_sub>(state);
+}
 
 
 #if false

@@ -513,7 +513,45 @@ void subx(machine_state& state)
 //
 void ori_to_ccr(machine_state& state)
 {
+    auto imm = state.next<uint16_t>();
+    auto ptr = state.get_pointer<uint8_t>(reg::status_register);
+    auto ccr = state.read(ptr);
+    uint8_t result = ccr | uint8_t(imm);
+    state.write(ptr, result);
+}
 
+//
+// ORI to SR
+//
+void ori_to_sr(machine_state& state)
+{
+    CHECK_SUPERVISOR(state);
+    auto imm = state.next<uint16_t>();
+    auto ptr = state.get_pointer<uint16_t>(reg::status_register);
+    auto sr = state.read(ptr);
+    uint16_t result = sr | imm;
+    state.write(ptr, result);
+}
+
+//
+// ORI
+//
+template <typename T, uint16_t dst_ea>
+void ori(machine_state& state)
+{
+    auto ptr = state.get_pointer<T>(dst_ea);
+    auto val = state.read(ptr);
+
+    typedef traits<T>::extension_word_type_t extension_t;
+    auto imm = state.next<extension_t>();
+    T result = val | T(imm);
+
+    state.set_status_bit<bit::negative>(most_significant_bit(result));
+    state.set_status_bit<bit::zero>(result == 0);
+    state.set_status_bit<bit::overflow>(false);
+    state.set_status_bit<bit::carry>(false);
+
+    state.write(ptr, result);
 }
 
 #if false

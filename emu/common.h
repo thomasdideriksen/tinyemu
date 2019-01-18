@@ -45,11 +45,11 @@ struct traits<uint32_t>
     static const uint32_t bits = 32;
 };
 
-//template <const int bit_offset, const int bit_count>
-//constexpr inline uint16_t extract_bits(uint16_t src)
-//{
-//    return (src >> (16 - bit_offset - bit_count)) & (0xffff >> (16 - bit_count));
-//}
+
+INLINE uint16_t extract_bits(uint16_t src, uint16_t bit_offset, uint16_t bit_count)
+{
+    return (src >> (16 - bit_offset - bit_count)) & (0xffff >> (16 - bit_count));
+}
 
 template <uint32_t val>
 INLINE constexpr uint32_t swap_effective_address()

@@ -49,9 +49,7 @@ def getTemplateParams(opcode, bitPattern):
     for piece in pattern:
         bits = piece['bits']
         bitIndex += bits
-        if piece.get('excludeTemplate', False):
-            continue
-        if len(piece['valid']) > 1 or piece.get('forceTemplate', False) == True:
+        if piece.get('template', False):
             param = (bitPattern >> (16 - bitIndex)) & (0xffff >> (16 - bits))
             if 'mapping' in piece:
                 param = piece['mapping'][str(param)]
@@ -65,6 +63,7 @@ try:
 
     with open('generated.cpp', 'w') as f:
         occupied = {}
+        unique = set()
         for opcode in opcodes:
             bitPatterns = makeBitPatterns(opcode, 0, 0, 0)
             for bitPattern in bitPatterns:
@@ -74,11 +73,16 @@ try:
                 occupied[bitPattern] = opcode
                 templateParams = getTemplateParams(opcode, bitPattern)
                 if len(templateParams) == 0:
-                    code = 'table[{:#06x}] = {};\n'.format(bitPattern, opcode['name'])
+                    func = opcode['name']
+                    code = 'table[{:#06x}] = {};\n'.format(bitPattern, func)
                 else:
-                    code = 'table[{:#06x}] = {}<{}' + ', {}' * (len(templateParams) - 1) + '>;\n'
-                    code = code.format(bitPattern, opcode['name'], *templateParams)
+                    func = '{}<{}' + ', {}' * (len(templateParams) - 1) + '>'
+                    func = func.format(opcode['name'], *templateParams)
+                    code = 'table[{:#06x}] = {};\n'
+                    code = code.format(bitPattern, func)
+                unique.add(func)
                 f.write(code);
+        print('Unique template function instantiations: {}'.format(len(unique)))
 
 except Exception as ex:
     print('error: {}'.format(ex))

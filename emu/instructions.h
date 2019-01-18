@@ -26,9 +26,9 @@ void move(machine_state& state, uint16_t opcode)
 // MOVE from SR
 //
 
-template <uint16_t dst>
 void move_from_sr(machine_state& state, uint16_t opcode)
 {
+    auto dst = extract_bits(opcode, 10, 6);
     auto src_ptr = state.get_pointer<uint16_t>(reg::status_register);
     auto dst_ptr = state.get_pointer<uint16_t>(dst);
     auto result = state.read(src_ptr);
@@ -97,10 +97,12 @@ void move_usp(machine_state& state, uint16_t opcode)
 // MOVEQ
 //
 
-template <uint16_t dst, uint16_t data>
 void moveq(machine_state& state, uint16_t opcode)
 {   
-    auto dst_ptr = state.get_pointer<uint32_t>(make_effective_address<0, dst>());
+    auto dst = extract_bits(opcode, 4, 3);
+    auto data = extract_bits(opcode, 8, 8);
+
+    auto dst_ptr = state.get_pointer<uint32_t>(make_effective_address(0, dst));
     auto result = sign_extend(data);
 
     state.set_status_bit<bit::negative>(is_negative(result));
@@ -651,11 +653,11 @@ void eori(machine_state& state, uint16_t opcode)
 //
 // Helper: OR, EOR, AND
 //
-template <uint16_t reg, uint16_t dir, typename T, typename O>
+template <uint16_t dir, typename T, typename O>
 INLINE void logical_helper(machine_state& state, uint16_t opcode)
 {
-    auto ptr_reg = state.get_pointer<T>(make_effective_address<0, reg>());
-    auto ptr_ea = state.get_pointer<T>(opcode & 0x3f);
+    auto ptr_reg = state.get_pointer<T>(make_effective_address(0, extract_bits(opcode, 4, 3)));
+    auto ptr_ea = state.get_pointer<T>(extract_bits(opcode, 10, 6));
 
     auto val_reg = state.read(ptr_reg);
     auto val_ea = state.read(ptr_ea);
@@ -684,30 +686,30 @@ INLINE void logical_helper(machine_state& state, uint16_t opcode)
 // OR
 //
 
-template <uint16_t reg, uint16_t dir, typename T>
+template <uint16_t dir, typename T>
 void _or(machine_state& state, uint16_t opcode)
 {
-    logical_helper<reg, dir, T, operation_or>(state, opcode);
+    logical_helper<dir, T, operation_or>(state, opcode);
 }
 
 //
 // AND
 //
 
-template <uint16_t reg, uint16_t dir, typename T>
+template <uint16_t dir, typename T>
 void _and(machine_state& state, uint16_t opcode)
 {
-    logical_helper<reg, dir, T, operation_and>(state, opcode);
+    logical_helper<dir, T, operation_and>(state, opcode);
 }
 
 //
 // EOR
 //
 
-template <uint16_t reg, typename T>
+template <typename T>
 void eor(machine_state& state, uint16_t opcode)
 {
-    logical_helper<reg, 1, T, operation_eor>(state, opcode);
+    logical_helper<1, T, operation_eor>(state, opcode);
 }
 
 

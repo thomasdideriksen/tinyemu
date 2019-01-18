@@ -646,6 +646,68 @@ void eori(machine_state& state)
     logical_immediate_helper<T, dst_ea, operation_eor>(state);
 }
 
+//
+// Helper: OR, EOR, AND
+//
+template <uint16_t reg, uint16_t dir, typename T, uint16_t ea, typename O>
+INLINE void logical_helper(machine_state& state)
+{
+    auto ptr_reg = state.get_pointer<T>(make_effective_address<0, reg>());
+    auto ptr_ea = state.get_pointer<T>(ea);
+
+    auto val_reg = state.read(ptr_reg);
+    auto val_ea = state.read(ptr_ea);
+
+    T result = O::template execute<T>(val_reg, val_ea);
+
+    state.set_status_bit<bit::negative>(most_significant_bit(result));
+    state.set_status_bit<bit::zero>(result == 0);
+    state.set_status_bit<bit::overflow>(false);
+    state.set_status_bit<bit::carry>(false);
+
+    switch (dir)
+    {
+    case 0:
+        state.write(ptr_reg, result);
+        break;
+    case 1:
+        state.write(ptr_ea, result);
+        break;
+    default:
+        THROW("Invalid direction");
+    }
+}
+
+//
+// OR
+//
+
+template <uint16_t reg, uint16_t dir, typename T, uint16_t ea>
+void _or(machine_state& state)
+{
+    logical_helper<reg, dir, T, ea, operation_or>(state);
+}
+
+//
+// AND
+//
+
+template <uint16_t reg, uint16_t dir, typename T, uint16_t ea>
+void _and(machine_state& state)
+{
+    logical_helper<reg, dir, T, ea, operation_and>(state);
+}
+
+//
+// EOR
+//
+
+template <uint16_t reg, typename T, uint16_t ea>
+void eor(machine_state& state)
+{
+    logical_helper<reg, 1, T, ea, operation_eor>(state);
+}
+
 
 #if false
 void inst_move(machine_state& state, uint16_t opcode);

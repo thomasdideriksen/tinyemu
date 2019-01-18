@@ -65,6 +65,7 @@ void move_to_sr(machine_state& state)
 //
 // MOVE USP
 //
+
 template <uint16_t dir, uint16_t ea>
 void move_usp(machine_state& state)
 {
@@ -400,6 +401,7 @@ void subq(machine_state& state)
 //
 // Helper: ADDA, SUBA
 //
+
 template <uint16_t dst, typename T, uint16_t src_ea, typename O>
 INLINE void arithmetic_address_helper(machine_state& state)
 {
@@ -527,21 +529,6 @@ INLINE void logical_immediate_to_ccr_helper(machine_state& state)
 }
 
 //
-// Helper: ORI, EORI, ANDI to SR
-//
-
-template <typename O>
-INLINE void logical_immediate_to_sr_helper(machine_state& state)
-{
-    CHECK_SUPERVISOR(state);
-    auto imm = state.next<uint16_t>();
-    auto ptr = state.get_pointer<uint16_t>(reg::status_register);
-    auto sr = state.read(ptr);
-    uint16_t result = O::template execute<uint16_t>(sr, imm);
-    state.write(ptr, result);
-}
-
-//
 // ORI to CCR
 //
 
@@ -566,6 +553,21 @@ void andi_to_ccr(machine_state& state)
 void eori_to_ccr(machine_state& state)
 {
     logical_immediate_to_ccr_helper<operation_eor>(state);
+}
+
+//
+// Helper: ORI, EORI, ANDI to SR
+//
+
+template <typename O>
+INLINE void logical_immediate_to_sr_helper(machine_state& state)
+{
+    CHECK_SUPERVISOR(state);
+    auto imm = state.next<uint16_t>();
+    auto ptr = state.get_pointer<uint16_t>(reg::status_register);
+    auto sr = state.read(ptr);
+    uint16_t result = O::template execute<uint16_t>(sr, imm);
+    state.write(ptr, result);
 }
 
 //

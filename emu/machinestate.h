@@ -26,7 +26,7 @@ enum class reg
 };
 
 class machine_state;
-typedef void(*inst_func_ptr_t)(machine_state&);
+typedef void(*inst_func_ptr_t)(machine_state&, uint16_t);
 
 #define CHECK_SUPERVISOR(state) if (!state.get_status_bit<bit::supervisor>()) { state.exception(8 /* Privilege violation */); return; }
 

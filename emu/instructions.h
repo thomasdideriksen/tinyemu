@@ -7,7 +7,7 @@
 //
 
 template <typename T, uint16_t src, uint16_t dst>
-void move(machine_state& state)
+void move(machine_state& state, uint16_t opcode)
 {
     T* src_ptr = state.get_pointer<T>(src);
     T* dst_ptr = state.get_pointer<T>(swap_effective_address<dst>());
@@ -27,7 +27,7 @@ void move(machine_state& state)
 //
 
 template <uint16_t dst>
-void move_from_sr(machine_state& state)
+void move_from_sr(machine_state& state, uint16_t opcode)
 {
     auto src_ptr = state.get_pointer<uint16_t>(reg::status_register);
     auto dst_ptr = state.get_pointer<uint16_t>(dst);
@@ -40,7 +40,7 @@ void move_from_sr(machine_state& state)
 // 
 
 template <uint16_t src>
-void move_to_ccr(machine_state& state)
+void move_to_ccr(machine_state& state, uint16_t opcode)
 {
     auto src_ptr = state.get_pointer<uint8_t>(src);
     auto dst_ptr = state.get_pointer<uint8_t>(reg::status_register);
@@ -53,7 +53,7 @@ void move_to_ccr(machine_state& state)
 //
 
 template <uint16_t src>
-void move_to_sr(machine_state& state)
+void move_to_sr(machine_state& state, uint16_t opcode)
 {
     CHECK_SUPERVISOR(state);
     auto src_ptr = state.get_pointer<uint16_t>(src);
@@ -67,7 +67,7 @@ void move_to_sr(machine_state& state)
 //
 
 template <uint16_t dir, uint16_t ea>
-void move_usp(machine_state& state)
+void move_usp(machine_state& state, uint16_t opcode)
 {
     CHECK_SUPERVISOR(state);
     auto reg_ptr = state.get_pointer<uint32_t>(reg::user_stack_pointer);
@@ -98,7 +98,7 @@ void move_usp(machine_state& state)
 //
 
 template <uint16_t dst, uint16_t data>
-void moveq(machine_state& state)
+void moveq(machine_state& state, uint16_t opcode)
 {   
     auto dst_ptr = state.get_pointer<uint32_t>(make_effective_address<0, dst>());
     auto result = sign_extend(data);
@@ -116,7 +116,7 @@ void moveq(machine_state& state)
 //
 
 template <typename T, uint16_t dst, uint16_t src>
-void movea(machine_state& state)
+void movea(machine_state& state, uint16_t opcode)
 {
     auto src_ptr = state.get_pointer<T>(src);
     auto dst_ptr = state.get_pointer<uint32_t>(make_effective_address<1, dst>());
@@ -129,7 +129,7 @@ void movea(machine_state& state)
 //
 
 template <uint16_t dir, typename T, uint16_t src>
-void movem(machine_state& state)
+void movem(machine_state& state, uint16_t opcode)
 {
     auto register_select = state.next<uint16_t>(); // Note: Get this first so we don't interfere with addressing modes, etc.
     auto mem_mode = (src >> 3) & 0x7;
@@ -176,7 +176,7 @@ void movem(machine_state& state)
 //
 
 template <uint16_t src, uint16_t dir, typename T, uint16_t dst>
-void movep(machine_state& state)
+void movep(machine_state& state, uint16_t opcode)
 {
     auto reg_ptr = state.get_pointer<uint8_t>(make_effective_address<0, src>()) + sizeof(T) - 1; // Note: Endian
     auto mem_ptr = state.get_pointer<uint8_t>(make_effective_address<2, dst>()) + state.next<int16_t>();
@@ -200,7 +200,7 @@ void movep(machine_state& state)
 //
 
 template <typename T, uint16_t ea>
-void clr(machine_state& state)
+void clr(machine_state& state, uint16_t opcode)
 {
     T* ptr = state.get_pointer<T>(ea);
 
@@ -220,7 +220,7 @@ struct operation_add { template <typename T> static T execute(T a, T b) { return
 //
 
 template <uint16_t reg, uint16_t mode, typename T, uint16_t ea, typename O>
-INLINE void arithmetic_helper(machine_state& state)
+INLINE void arithmetic_helper(machine_state& state, uint16_t opcode)
 {
     T *src, *dst;
 
@@ -268,9 +268,9 @@ INLINE void arithmetic_helper(machine_state& state)
 //
 
 template <uint16_t reg, uint16_t mode, typename T, uint16_t ea>
-void add(machine_state& state)
+void add(machine_state& state, uint16_t opcode)
 {
-    arithmetic_helper<reg, mode, T, ea, operation_add>(state);
+    arithmetic_helper<reg, mode, T, ea, operation_add>(state, opcode);
 }
 
 //
@@ -278,9 +278,9 @@ void add(machine_state& state)
 //
 
 template <uint16_t reg, uint16_t mode, typename T, uint16_t ea>
-void sub(machine_state& state)
+void sub(machine_state& state, uint16_t opcode)
 {
-    arithmetic_helper<reg, mode, T, ea, operation_sub>(state);
+    arithmetic_helper<reg, mode, T, ea, operation_sub>(state, opcode);
 }
 
 //
@@ -288,7 +288,7 @@ void sub(machine_state& state)
 //
 
 template <typename T, uint16_t ea, typename O>
-INLINE void arithmetic_imm_helper(machine_state& state)
+INLINE void arithmetic_imm_helper(machine_state& state, uint16_t opcode)
 {
     T* dst_ptr = state.get_pointer<T>(ea);
     T dst = state.read(dst_ptr);
@@ -323,9 +323,9 @@ INLINE void arithmetic_imm_helper(machine_state& state)
 //
 
 template <typename T, uint16_t ea>
-void addi(machine_state& state)
+void addi(machine_state& state, uint16_t opcode)
 {
-    arithmetic_imm_helper<T, ea, operation_add>(state);
+    arithmetic_imm_helper<T, ea, operation_add>(state, opcode);
 }
 
 //
@@ -333,16 +333,16 @@ void addi(machine_state& state)
 //
 
 template <typename T, uint16_t ea>
-void subi(machine_state& state)
+void subi(machine_state& state, uint16_t opcode)
 {
-    arithmetic_imm_helper<T, ea, operation_sub>(state);
+    arithmetic_imm_helper<T, ea, operation_sub>(state, opcode);
 }
 
 //
 // Helper: ADDQ, SUBQ
 //
 template <uint16_t data, typename T, uint16_t dst, typename O>
-INLINE void arithmetic_quick_helper(machine_state& state)
+INLINE void arithmetic_quick_helper(machine_state& state, uint16_t opcode)
 {
     auto ptr = state.get_pointer<T>(dst);
     auto val = state.read(ptr);
@@ -384,18 +384,18 @@ INLINE void arithmetic_quick_helper(machine_state& state)
 // ADDQ
 //
 template <uint16_t data, typename T, uint16_t dst>
-void addq(machine_state& state)
+void addq(machine_state& state, uint16_t opcode)
 {
-    arithmetic_quick_helper<data, T, dst, operation_add>(state);
+    arithmetic_quick_helper<data, T, dst, operation_add>(state, opcode);
 }
 
 //
 // SUBQ
 //
 template <uint16_t data, typename T, uint16_t dst>
-void subq(machine_state& state)
+void subq(machine_state& state, uint16_t opcode)
 {
-    arithmetic_quick_helper<data, T, dst, operation_sub>(state);
+    arithmetic_quick_helper<data, T, dst, operation_sub>(state, opcode);
 }
 
 //
@@ -403,7 +403,7 @@ void subq(machine_state& state)
 //
 
 template <uint16_t dst, typename T, uint16_t src_ea, typename O>
-INLINE void arithmetic_address_helper(machine_state& state)
+INLINE void arithmetic_address_helper(machine_state& state, uint16_t opcode)
 {
     auto dst_ptr = state.get_pointer<uint32_t>(make_effective_address<1, dst>());
     auto src_ptr = state.get_pointer<T>(src_ea);
@@ -422,9 +422,9 @@ INLINE void arithmetic_address_helper(machine_state& state)
 //
 
 template <uint16_t dst, typename T, uint16_t src_ea>
-void adda(machine_state& state)
+void adda(machine_state& state, uint16_t opcode)
 {
-    arithmetic_address_helper<dst, T, src_ea, operation_add>(state);
+    arithmetic_address_helper<dst, T, src_ea, operation_add>(state, opcode);
 }
 
 //
@@ -432,9 +432,9 @@ void adda(machine_state& state)
 //
 
 template <uint16_t dst, typename T, uint16_t src_ea>
-void suba(machine_state& state)
+void suba(machine_state& state, uint16_t opcode)
 {
-    arithmetic_address_helper<dst, T, src_ea, operation_sub>(state);
+    arithmetic_address_helper<dst, T, src_ea, operation_sub>(state, opcode);
 }
 
 //
@@ -442,7 +442,7 @@ void suba(machine_state& state)
 //
 
 template <uint16_t dst, typename T, uint16_t mode, uint16_t src, typename O>
-INLINE void arithmetic_extended_helper(machine_state& state)
+INLINE void arithmetic_extended_helper(machine_state& state, uint16_t opcode)
 {
     T *src_ptr, *dst_ptr;
 
@@ -495,9 +495,9 @@ INLINE void arithmetic_extended_helper(machine_state& state)
 //
 
 template <uint16_t dst, typename T, uint16_t mode, uint16_t src>
-void addx(machine_state& state)
+void addx(machine_state& state, uint16_t opcode)
 {
-    arithmetic_extended_helper<dst, T, mode, src, operation_add>(state);
+    arithmetic_extended_helper<dst, T, mode, src, operation_add>(state, opcode);
 }
 
 //
@@ -505,9 +505,9 @@ void addx(machine_state& state)
 //
 
 template <uint16_t dst, typename T, uint16_t mode, uint16_t src>
-void subx(machine_state& state)
+void subx(machine_state& state, uint16_t opcode)
 {
-    arithmetic_extended_helper<dst, T, mode, src, operation_sub>(state);
+    arithmetic_extended_helper<dst, T, mode, src, operation_sub>(state, opcode);
 }
 
 struct operation_or { template <typename T> static T execute(T a, T b) { return a | b; } };
@@ -519,7 +519,7 @@ struct operation_and { template <typename T> static T execute(T a, T b) { return
 //
 
 template <typename O>
-INLINE void logical_immediate_to_ccr_helper(machine_state& state)
+INLINE void logical_immediate_to_ccr_helper(machine_state& state, uint16_t opcode)
 {
     auto imm = state.next<uint16_t>();
     auto ptr = state.get_pointer<uint8_t>(reg::status_register);
@@ -532,27 +532,27 @@ INLINE void logical_immediate_to_ccr_helper(machine_state& state)
 // ORI to CCR
 //
 
-void ori_to_ccr(machine_state& state)
+void ori_to_ccr(machine_state& state, uint16_t opcode)
 {
-    logical_immediate_to_ccr_helper<operation_or>(state);
+    logical_immediate_to_ccr_helper<operation_or>(state, opcode);
 }
 
 //
 // ANDI to CCR
 //
 
-void andi_to_ccr(machine_state& state)
+void andi_to_ccr(machine_state& state, uint16_t opcode)
 {
-    logical_immediate_to_ccr_helper<operation_and>(state);
+    logical_immediate_to_ccr_helper<operation_and>(state, opcode);
 }
 
 //
 // EORI to CCR
 //
 
-void eori_to_ccr(machine_state& state)
+void eori_to_ccr(machine_state& state, uint16_t opcode)
 {
-    logical_immediate_to_ccr_helper<operation_eor>(state);
+    logical_immediate_to_ccr_helper<operation_eor>(state, opcode);
 }
 
 //
@@ -560,7 +560,7 @@ void eori_to_ccr(machine_state& state)
 //
 
 template <typename O>
-INLINE void logical_immediate_to_sr_helper(machine_state& state)
+INLINE void logical_immediate_to_sr_helper(machine_state& state, uint16_t opcode)
 {
     CHECK_SUPERVISOR(state);
     auto imm = state.next<uint16_t>();
@@ -574,34 +574,34 @@ INLINE void logical_immediate_to_sr_helper(machine_state& state)
 // ORI to SR
 //
 
-void ori_to_sr(machine_state& state)
+void ori_to_sr(machine_state& state, uint16_t opcode)
 {
-    logical_immediate_to_sr_helper<operation_or>(state);
+    logical_immediate_to_sr_helper<operation_or>(state, opcode);
 }
 
 //
 // ANDI to SR
 //
 
-void andi_to_sr(machine_state& state)
+void andi_to_sr(machine_state& state, uint16_t opcode)
 {
-    logical_immediate_to_sr_helper<operation_and>(state);
+    logical_immediate_to_sr_helper<operation_and>(state, opcode);
 }
 
 //
 // EORI to SR
 //
 
-void eori_to_sr(machine_state& state)
+void eori_to_sr(machine_state& state, uint16_t opcode)
 {
-    logical_immediate_to_sr_helper<operation_eor>(state);
+    logical_immediate_to_sr_helper<operation_eor>(state, opcode);
 }
 
 //
 // Helper: ORI, EORI, ANDI
 //
 template <typename T, uint16_t dst_ea, typename O>
-INLINE void logical_immediate_helper(machine_state& state)
+INLINE void logical_immediate_helper(machine_state& state, uint16_t opcode)
 {
     auto ptr = state.get_pointer<T>(dst_ea);
     auto val = state.read(ptr);
@@ -623,9 +623,9 @@ INLINE void logical_immediate_helper(machine_state& state)
 //
 
 template <typename T, uint16_t dst_ea>
-void ori(machine_state& state)
+void ori(machine_state& state, uint16_t opcode)
 {
-    logical_immediate_helper<T, dst_ea, operation_or>(state);
+    logical_immediate_helper<T, dst_ea, operation_or>(state, opcode);
 }
 
 //
@@ -633,9 +633,9 @@ void ori(machine_state& state)
 //
 
 template <typename T, uint16_t dst_ea>
-void andi(machine_state& state)
+void andi(machine_state& state, uint16_t opcode)
 {
-    logical_immediate_helper<T, dst_ea, operation_and>(state);
+    logical_immediate_helper<T, dst_ea, operation_and>(state, opcode);
 }
 
 //
@@ -643,19 +643,19 @@ void andi(machine_state& state)
 //
 
 template <typename T, uint16_t dst_ea>
-void eori(machine_state& state)
+void eori(machine_state& state, uint16_t opcode)
 {
-    logical_immediate_helper<T, dst_ea, operation_eor>(state);
+    logical_immediate_helper<T, dst_ea, operation_eor>(state, opcode);
 }
 
 //
 // Helper: OR, EOR, AND
 //
-template <uint16_t reg, uint16_t dir, typename T, uint16_t ea, typename O>
-INLINE void logical_helper(machine_state& state)
+template <uint16_t reg, uint16_t dir, typename T, typename O>
+INLINE void logical_helper(machine_state& state, uint16_t opcode)
 {
     auto ptr_reg = state.get_pointer<T>(make_effective_address<0, reg>());
-    auto ptr_ea = state.get_pointer<T>(ea);
+    auto ptr_ea = state.get_pointer<T>(opcode & 0x3f);
 
     auto val_reg = state.read(ptr_reg);
     auto val_ea = state.read(ptr_ea);
@@ -684,30 +684,30 @@ INLINE void logical_helper(machine_state& state)
 // OR
 //
 
-template <uint16_t reg, uint16_t dir, typename T, uint16_t ea>
-void _or(machine_state& state)
+template <uint16_t reg, uint16_t dir, typename T>
+void _or(machine_state& state, uint16_t opcode)
 {
-    logical_helper<reg, dir, T, ea, operation_or>(state);
+    logical_helper<reg, dir, T, operation_or>(state, opcode);
 }
 
 //
 // AND
 //
 
-template <uint16_t reg, uint16_t dir, typename T, uint16_t ea>
-void _and(machine_state& state)
+template <uint16_t reg, uint16_t dir, typename T>
+void _and(machine_state& state, uint16_t opcode)
 {
-    logical_helper<reg, dir, T, ea, operation_and>(state);
+    logical_helper<reg, dir, T, operation_and>(state, opcode);
 }
 
 //
 // EOR
 //
 
-template <uint16_t reg, typename T, uint16_t ea>
-void eor(machine_state& state)
+template <uint16_t reg, typename T>
+void eor(machine_state& state, uint16_t opcode)
 {
-    logical_helper<reg, 1, T, ea, operation_eor>(state);
+    logical_helper<reg, 1, T, operation_eor>(state, opcode);
 }
 
 

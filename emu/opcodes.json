@@ -236,7 +236,7 @@
             {"bits": 3, "name": "Register (D)"},
             {"bits": 1, "name": "Direction", "valid": [0], "forceTemplate": true},
             {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}},
-            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "excludeTemplate": true}]
     },
     {
         "name": "_or",
@@ -245,7 +245,7 @@
             {"bits": 3, "name": "Register (D)"},
             {"bits": 1, "name": "Direction", "valid": [1], "forceTemplate": true},
             {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}},
-            {"bits": 6, "name": "Effective Address", "modes": [2, 3, 4, 5, 6, 7, 8]}]
+            {"bits": 6, "name": "Effective Address", "modes": [2, 3, 4, 5, 6, 7, 8], "excludeTemplate": true}]
     },
     {
         "name": "_and",
@@ -254,7 +254,7 @@
             {"bits": 3, "name": "Register (D)"},
             {"bits": 1, "name": "Direction", "valid": [0], "forceTemplate": true},
             {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}},
-            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "excludeTemplate": true}]
     },
     {
         "name": "_and",
@@ -263,7 +263,7 @@
             {"bits": 3, "name": "Register (D)"},
             {"bits": 1, "name": "Direction", "valid": [1], "forceTemplate": true},
             {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}},
-            {"bits": 6, "name": "Effective Address", "modes": [2, 3, 4, 5, 6, 7, 8]}]
+            {"bits": 6, "name": "Effective Address", "modes": [2, 3, 4, 5, 6, 7, 8], "excludeTemplate": true}]
     },
     {
         "name": "eor",
@@ -272,7 +272,7 @@
             {"bits": 3, "name": "Register (D)"},
             {"bits": 1, "valid": [1]},
             {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}},
-            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8]}]
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8], "excludeTemplate": true}]
     }
 ]
 

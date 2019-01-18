@@ -49,6 +49,8 @@ def getTemplateParams(opcode, bitPattern):
     for piece in pattern:
         bits = piece['bits']
         bitIndex += bits
+        if piece.get('excludeTemplate', False):
+            continue
         if len(piece['valid']) > 1 or piece.get('forceTemplate', False) == True:
             param = (bitPattern >> (16 - bitIndex)) & (0xffff >> (16 - bits))
             if 'mapping' in piece:

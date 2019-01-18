@@ -508,43 +508,105 @@ void subx(machine_state& state)
     arithmetic_extended_helper<dst, T, mode, src, operation_sub>(state);
 }
 
+struct operation_or { template <typename T> static T execute(T a, T b) { return a | b; } };
+struct operation_eor { template <typename T> static T execute(T a, T b) { return a ^ b; } };
+struct operation_and { template <typename T> static T execute(T a, T b) { return a & b; } };
+
 //
-// ORI to CCR
+// Helper: ORI, EORI, ANDI to CCR
 //
-void ori_to_ccr(machine_state& state)
+
+template <typename O>
+INLINE void logical_immediate_to_ccr_helper(machine_state& state)
 {
     auto imm = state.next<uint16_t>();
     auto ptr = state.get_pointer<uint8_t>(reg::status_register);
     auto ccr = state.read(ptr);
-    uint8_t result = ccr | uint8_t(imm);
+    uint8_t result = O::template execute<uint8_t>(ccr, uint8_t(imm));
     state.write(ptr, result);
 }
 
 //
-// ORI to SR
+// Helper: ORI, EORI, ANDI to SR
 //
-void ori_to_sr(machine_state& state)
+
+template <typename O>
+INLINE void logical_immediate_to_sr_helper(machine_state& state)
 {
     CHECK_SUPERVISOR(state);
     auto imm = state.next<uint16_t>();
     auto ptr = state.get_pointer<uint16_t>(reg::status_register);
     auto sr = state.read(ptr);
-    uint16_t result = sr | imm;
+    uint16_t result = O::template execute<uint16_t>(sr, imm);
     state.write(ptr, result);
 }
 
 //
-// ORI
+// ORI to CCR
 //
-template <typename T, uint16_t dst_ea>
-void ori(machine_state& state)
+
+void ori_to_ccr(machine_state& state)
+{
+    logical_immediate_to_ccr_helper<operation_or>(state);
+}
+
+//
+// ANDI to CCR
+//
+
+void andi_to_ccr(machine_state& state)
+{
+    logical_immediate_to_ccr_helper<operation_and>(state);
+}
+
+//
+// EORI to CCR
+//
+
+void eori_to_ccr(machine_state& state)
+{
+    logical_immediate_to_ccr_helper<operation_eor>(state);
+}
+
+//
+// ORI to SR
+//
+
+void ori_to_sr(machine_state& state)
+{
+    logical_immediate_to_sr_helper<operation_or>(state);
+}
+
+//
+// ANDI to SR
+//
+
+void andi_to_sr(machine_state& state)
+{
+    logical_immediate_to_sr_helper<operation_and>(state);
+}
+
+//
+// EORI to SR
+//
+
+void eori_to_sr(machine_state& state)
+{
+    logical_immediate_to_sr_helper<operation_eor>(state);
+}
+
+//
+// Helper: ORI, EORI, ANDI
+//
+template <typename T, uint16_t dst_ea, typename O>
+INLINE void logical_immediate_helper(machine_state& state)
 {
     auto ptr = state.get_pointer<T>(dst_ea);
     auto val = state.read(ptr);
 
     typedef traits<T>::extension_word_type_t extension_t;
     auto imm = state.next<extension_t>();
-    T result = val | T(imm);
+    T result = O::template execute<T>(val, T(imm));
 
     state.set_status_bit<bit::negative>(most_significant_bit(result));
     state.set_status_bit<bit::zero>(result == 0);
@@ -553,6 +615,37 @@ void ori(machine_state& state)
 
     state.write(ptr, result);
 }
+
+//
+// ORI
+//
+
+template <typename T, uint16_t dst_ea>
+void ori(machine_state& state)
+{
+    logical_immediate_helper<T, dst_ea, operation_or>(state);
+}
+
+//
+// ANDI
+//
+
+template <typename T, uint16_t dst_ea>
+void andi(machine_state& state)
+{
+    logical_immediate_helper<T, dst_ea, operation_and>(state);
+}
+
+//
+// EORI
+//
+
+template <typename T, uint16_t dst_ea>
+void eori(machine_state& state)
+{
+    logical_immediate_helper<T, dst_ea, operation_eor>(state);
+}
+
 
 #if false
 void inst_move(machine_state& state, uint16_t opcode);

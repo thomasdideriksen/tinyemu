@@ -742,6 +742,132 @@ void eor(machine_state& state, uint16_t opcode)
     logical_helper<1, T, operation_eor>(state, opcode);
 }
 
+//
+// Helper: NEGX, NEG
+//
+
+template <typename T, bool use_extend>
+INLINE void negate_helper(machine_state& state, uint16_t opcode)
+{
+    auto ea = extract_bits(opcode, 10, 6);
+    auto ptr = state.get_pointer<T>(ea);
+    auto val = state.read<T>(ptr);
+
+    T extend = (use_extend && state.get_status_bit<bit::extend>()) ? T(1) : T(0);
+
+    val = negate(val);
+    extend = negate(extend);
+
+    typedef traits<T>::higher_precision_type_t high_precition_t;
+
+    high_precition_t result_high_precision = 
+        high_precition_t(val) + 
+        high_precition_t(extend);
+
+    T result = (T)(result_high_precision);
+
+    bool non_zero = result != 0;
+    bool negative = is_negative(result);
+    bool overflow = has_overflow(val, extend, result);
+
+    state.set_status_bit<bit::extend>(non_zero);
+    state.set_status_bit<bit::negative>(negative);
+    state.set_status_bit<bit::zero>(result == 0);
+    state.set_status_bit<bit::overflow>(overflow);
+    state.set_status_bit<bit::carry>(non_zero);
+
+    state.write<T>(ptr, result);
+}
+
+//
+// NEG
+//
+
+template <typename T>
+void neg(machine_state& state, uint16_t opcode)
+{
+    negate_helper<T, false>(state, opcode);
+}
+
+//
+// NEGX
+//
+
+template <typename T>
+void negx(machine_state& state, uint16_t opcode)
+{
+    negate_helper<T, true>(state, opcode);
+}
+
+
+//
+// Helper: DIVU, DIVS
+//
+
+template <typename TDenom, typename TNum, const TNum min_val, const TNum max_val>
+INLINE void divide_helper(machine_state& state, uint16_t opcode)
+{
+    // Denominator (16 bits)
+    auto denom_ea = extract_bits(opcode, 10, 6);
+    auto denom_ptr = state.get_pointer<uint16_t>(denom_ea);
+    auto denom_val = state.read<TDenom>((TDenom*)denom_ptr);
+
+    // Always clear carry flag
+    state.set_status_bit<bit::carry>(false);
+
+    if (denom_val == 0)
+    {
+        state.exception(5 /* Divide by zero */);
+    }
+    else
+    {
+        // Numerator (32 bits)
+        auto num_reg = extract_bits(opcode, 4, 3);
+        auto num_ptr = state.get_pointer<uint32_t>(make_effective_address(0, num_reg));
+        auto num_val = state.read<TNum>((TNum*)num_ptr);
+
+        // Divide
+        auto quotient = num_val / TNum(denom_val);
+
+        // Does the result overflow
+        bool overflow = (quotient > max_val) || (quotient < min_val);
+        state.set_status_bit<bit::overflow>(overflow);
+
+        if (!overflow)
+        {
+            // Generate result (quotient + remainder)
+            uint32_t quotient_unsigned = uint32_t(quotient);
+            uint32_t remainder = uint32_t(num_val % TNum(denom_val));
+            uint32_t result = ((remainder << 16) & 0xffff0000) | (quotient_unsigned & 0xffff);
+
+            // Update status bits
+            state.set_status_bit<bit::negative>(is_negative(quotient_unsigned));
+            state.set_status_bit<bit::zero>(quotient == 0);
+
+            // Write result
+            state.write<uint32_t>((uint32_t*)num_ptr, result);
+        }
+    }
+}
+
+//
+// DIVU
+//
+
+void divu(machine_state& state, uint16_t opcode)
+{
+    divide_helper<uint16_t, uint32_t, 0, 65535>(state, opcode);
+}
+
+//
+// DIVS
+//
+
+void divs(machine_state& state, uint16_t opcode)
+{
+    divide_helper<int16_t, int32_t, -32768, 32767>(state, opcode);
+}
+
 
 #if false
 void inst_move(machine_state& state, uint16_t opcode);

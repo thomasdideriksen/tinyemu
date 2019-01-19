@@ -273,6 +273,36 @@
             {"bits": 1, "valid": [1]},
             {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}, "template": true},
             {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8]}]
+    },
+    {
+        "name": "neg",
+        "pattern": [
+            {"bits": 8, "valid": [68]},
+            {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}, "template": true},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8]}]
+    },
+    {
+        "name": "negx",
+        "pattern": [
+            {"bits": 8, "valid": [64]},
+            {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}, "template": true},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8]}]
+    },
+    {
+        "name": "divu",
+        "pattern": [
+            {"bits": 4, "valid": [8]},
+            {"bits": 3, "name": "Register (D), Numerator"},
+            {"bits": 3, "valid": [3]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "divs",
+        "pattern": [
+            {"bits": 4, "valid": [8]},
+            {"bits": 3, "name": "Register (D), Numerator"},
+            {"bits": 3, "valid": [7]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
     }
 ]
 

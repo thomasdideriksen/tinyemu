@@ -51,14 +51,6 @@ INLINE uint16_t extract_bits(uint16_t src, uint16_t bit_offset, uint16_t bit_cou
     return (src >> (16 - bit_offset - bit_count)) & (0xffff >> (16 - bit_count));
 }
 
-template <uint32_t val>
-INLINE constexpr uint32_t swap_effective_address()
-{
-    auto lower = val & 0x3;
-    auto upper = (val >> 3) & 0x3;
-    return upper | (lower << 3);
-}
-
 template <uint32_t mode, uint32_t reg>
 INLINE constexpr uint32_t make_effective_address()
 {

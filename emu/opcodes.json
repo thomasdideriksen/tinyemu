@@ -17,7 +17,7 @@
         "name": "move_to_ccr",
         "pattern": [
             {"bits": 10, "valid": [275]},
-            {"bits": 6, "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "template": true}]
+            {"bits": 6, "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
     },
     {
         "name": "move_to_sr",
@@ -30,7 +30,7 @@
         "pattern": [
             {"bits": 12, "valid": [1254]},
             {"bits": 1, "name": "Direction", "template": true},
-            {"bits": 3, "name": "Source (A)", "template": true}]
+            {"bits": 3, "name": "Source (A)"}]
     },
     {
         "name": "moveq",

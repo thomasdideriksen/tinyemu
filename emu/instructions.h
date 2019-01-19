@@ -44,10 +44,10 @@ void move_from_sr(machine_state& state, uint16_t opcode)
 // MOVE to CCR
 // 
 
-template <uint16_t src>
 void move_to_ccr(machine_state& state, uint16_t opcode)
 {
-    auto src_ptr = state.get_pointer<uint8_t>(src);
+    auto ea = extract_bits(opcode, 10, 6);
+    auto src_ptr = state.get_pointer<uint8_t>(ea);
     auto dst_ptr = state.get_pointer<uint8_t>(reg::status_register);
     auto result = state.read(src_ptr);
     state.write(dst_ptr, result);
@@ -71,10 +71,11 @@ void move_to_sr(machine_state& state, uint16_t opcode)
 // MOVE USP
 //
 
-template <uint16_t dir, uint16_t ea>
+template <uint16_t dir>
 void move_usp(machine_state& state, uint16_t opcode)
 {
     CHECK_SUPERVISOR(state);
+    auto ea = extract_bits(opcode, 13, 3);
     auto reg_ptr = state.get_pointer<uint32_t>(reg::user_stack_pointer);
     auto mem_ptr = state.get_pointer<uint32_t>(ea);
     switch (dir)

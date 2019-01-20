@@ -9,8 +9,8 @@
 template <typename T>
 void move(machine_state& state, uint16_t opcode)
 {
-    auto src = extract_bits(opcode, 4, 6);
-    auto dst = extract_bits(opcode, 10, 6);
+    auto src = extract_bits<4, 6>(opcode);
+    auto dst = extract_bits<10, 6>(opcode);
 
     src = (src >> 3) | ((src & 0x3) << 3); // Note: Swap upper and lower 3 bits
 
@@ -33,7 +33,7 @@ void move(machine_state& state, uint16_t opcode)
 
 void move_from_sr(machine_state& state, uint16_t opcode)
 {
-    auto dst = extract_bits(opcode, 10, 6);
+    auto dst = extract_bits<10, 6>(opcode);
     auto src_ptr = state.get_pointer<uint16_t>(reg::status_register);
     auto dst_ptr = state.get_pointer<uint16_t>(dst);
     auto result = state.read(src_ptr);
@@ -46,7 +46,7 @@ void move_from_sr(machine_state& state, uint16_t opcode)
 
 void move_to_ccr(machine_state& state, uint16_t opcode)
 {
-    auto ea = extract_bits(opcode, 10, 6);
+    auto ea = extract_bits<10, 6>(opcode);
     auto src_ptr = state.get_pointer<uint8_t>(ea);
     auto dst_ptr = state.get_pointer<uint8_t>(reg::status_register);
     auto result = state.read(src_ptr);
@@ -75,7 +75,7 @@ template <uint16_t dir>
 void move_usp(machine_state& state, uint16_t opcode)
 {
     CHECK_SUPERVISOR(state);
-    auto ea = extract_bits(opcode, 13, 3);
+    auto ea = extract_bits<13, 3>(opcode);
     auto reg_ptr = state.get_pointer<uint32_t>(reg::user_stack_pointer);
     auto mem_ptr = state.get_pointer<uint32_t>(ea);
     switch (dir)
@@ -105,8 +105,8 @@ void move_usp(machine_state& state, uint16_t opcode)
 
 void moveq(machine_state& state, uint16_t opcode)
 {   
-    auto dst = extract_bits(opcode, 4, 3);
-    auto data = extract_bits(opcode, 8, 8);
+    auto dst = extract_bits<4, 3>(opcode);
+    auto data = extract_bits<8, 8>(opcode);
 
     auto dst_ptr = state.get_pointer<uint32_t>(make_effective_address(0, dst));
     auto result = sign_extend(data);
@@ -126,8 +126,8 @@ void moveq(machine_state& state, uint16_t opcode)
 template <typename T>
 void movea(machine_state& state, uint16_t opcode)
 {
-    auto src_ea = extract_bits(opcode, 10, 6);
-    auto dst_reg = extract_bits(opcode, 4, 3);
+    auto src_ea = extract_bits<10, 6>(opcode);
+    auto dst_reg = extract_bits<4, 3>(opcode);
 
     auto src_ptr = state.get_pointer<T>(src_ea);
     auto dst_ptr = state.get_pointer<uint32_t>(make_effective_address(1, dst_reg));
@@ -142,7 +142,7 @@ void movea(machine_state& state, uint16_t opcode)
 template <uint16_t dir, typename T>
 void movem(machine_state& state, uint16_t opcode)
 {
-    auto src_ea = extract_bits(opcode, 10, 6);
+    auto src_ea = extract_bits<10, 6>(opcode);
 
     auto register_select = state.next<uint16_t>(); // Note: Get this first so we don't interfere with addressing modes, etc.
     auto mem_mode = (src_ea >> 3) & 0x7;
@@ -191,8 +191,8 @@ void movem(machine_state& state, uint16_t opcode)
 template <uint16_t dir, typename T>
 void movep(machine_state& state, uint16_t opcode)
 {
-    auto src_reg = extract_bits(opcode, 4, 3);
-    auto dst_reg = extract_bits(opcode, 13, 3);
+    auto src_reg = extract_bits<4, 3>(opcode);
+    auto dst_reg = extract_bits<13, 3>(opcode);
 
     auto reg_ptr = state.get_pointer<uint8_t>(make_effective_address(0, src_reg)) + sizeof(T) - 1; // Note: Endian
     auto mem_ptr = state.get_pointer<uint8_t>(make_effective_address(2, dst_reg)) + state.next<int16_t>();
@@ -218,7 +218,7 @@ void movep(machine_state& state, uint16_t opcode)
 template <typename T>
 void clr(machine_state& state, uint16_t opcode)
 {
-    auto ea = extract_bits(opcode, 10, 6);
+    auto ea = extract_bits<10, 6>(opcode);
     T* ptr = state.get_pointer<T>(ea);
 
     state.set_status_bit<bit::negative>(false);
@@ -239,8 +239,8 @@ struct operation_add { template <typename T> static T execute(T a, T b) { return
 template <uint16_t mode, typename T, typename O>
 INLINE void arithmetic_helper(machine_state& state, uint16_t opcode)
 {
-    auto reg = extract_bits(opcode, 4, 3);
-    auto ea = extract_bits(opcode, 10, 6);
+    auto reg = extract_bits<4, 3>(opcode);
+    auto ea = extract_bits<10, 6>(opcode);
 
     T *src, *dst;
 
@@ -310,7 +310,7 @@ void sub(machine_state& state, uint16_t opcode)
 template <typename T, typename O>
 INLINE void arithmetic_imm_helper(machine_state& state, uint16_t opcode)
 {
-    auto ea = extract_bits(opcode, 10, 6);
+    auto ea = extract_bits<10, 6>(opcode);
 
     T* dst_ptr = state.get_pointer<T>(ea);
     T dst = state.read(dst_ptr);
@@ -366,8 +366,8 @@ void subi(machine_state& state, uint16_t opcode)
 template <typename T, typename O>
 INLINE void arithmetic_quick_helper(machine_state& state, uint16_t opcode)
 {
-    auto data = extract_bits(opcode, 4, 3);
-    auto ea = extract_bits(opcode, 10, 6);
+    auto data = extract_bits<4, 3>(opcode);
+    auto ea = extract_bits<10, 6>(opcode);
 
     auto ptr = state.get_pointer<T>(ea);
     auto val = state.read(ptr);
@@ -430,8 +430,8 @@ void subq(machine_state& state, uint16_t opcode)
 template <typename T, typename O>
 INLINE void arithmetic_address_helper(machine_state& state, uint16_t opcode)
 {
-    auto dst_reg = extract_bits(opcode, 4, 3);
-    auto src_ea = extract_bits(opcode, 10, 6);
+    auto dst_reg = extract_bits<4, 3>(opcode);
+    auto src_ea = extract_bits<10, 6>(opcode);
 
     auto dst_ptr = state.get_pointer<uint32_t>(make_effective_address(1, dst_reg));
     auto src_ptr = state.get_pointer<T>(src_ea);
@@ -472,8 +472,8 @@ void suba(machine_state& state, uint16_t opcode)
 template <typename T, uint16_t mode, typename O>
 INLINE void arithmetic_extended_helper(machine_state& state, uint16_t opcode)
 {
-    auto dst_reg = extract_bits(opcode, 4, 3);
-    auto src_reg = extract_bits(opcode, 13, 3);
+    auto dst_reg = extract_bits<4, 3>(opcode);
+    auto src_reg = extract_bits<13, 3>(opcode);
 
     T *src_ptr, *dst_ptr;
 
@@ -634,7 +634,7 @@ void eori_to_sr(machine_state& state, uint16_t opcode)
 template <typename T, typename O>
 INLINE void logical_immediate_helper(machine_state& state, uint16_t opcode)
 {
-    auto dst_ea = extract_bits(opcode, 10, 6);
+    auto dst_ea = extract_bits<10, 6>(opcode);
 
     auto ptr = state.get_pointer<T>(dst_ea);
     auto val = state.read(ptr);
@@ -687,8 +687,8 @@ void eori(machine_state& state, uint16_t opcode)
 template <uint16_t dir, typename T, typename O>
 INLINE void logical_helper(machine_state& state, uint16_t opcode)
 {
-    auto ptr_reg = state.get_pointer<T>(make_effective_address(0, extract_bits(opcode, 4, 3)));
-    auto ptr_ea = state.get_pointer<T>(extract_bits(opcode, 10, 6));
+    auto ptr_reg = state.get_pointer<T>(make_effective_address(0, extract_bits<4, 3>(opcode)));
+    auto ptr_ea = state.get_pointer<T>(extract_bits<10, 6>(opcode));
 
     auto val_reg = state.read(ptr_reg);
     auto val_ea = state.read(ptr_ea);
@@ -750,7 +750,7 @@ void eor(machine_state& state, uint16_t opcode)
 template <typename T, bool use_extend>
 INLINE void negate_helper(machine_state& state, uint16_t opcode)
 {
-    auto ea = extract_bits(opcode, 10, 6);
+    auto ea = extract_bits<10, 6>(opcode);
     auto ptr = state.get_pointer<T>(ea);
     auto val = state.read<T>(ptr);
 
@@ -809,7 +809,7 @@ template <typename TDenom, typename TNum, const TNum min_val, const TNum max_val
 INLINE void divide_helper(machine_state& state, uint16_t opcode)
 {
     // Denominator (16 bits)
-    auto denom_ea = extract_bits(opcode, 10, 6);
+    auto denom_ea = extract_bits<10, 6>(opcode);
     auto denom_ptr = state.get_pointer<uint16_t>(denom_ea);
     auto denom_val = state.read<TDenom>((TDenom*)denom_ptr);
 
@@ -823,7 +823,7 @@ INLINE void divide_helper(machine_state& state, uint16_t opcode)
     else
     {
         // Numerator (32 bits)
-        auto num_reg = extract_bits(opcode, 4, 3);
+        auto num_reg = extract_bits<4, 3>(opcode);
         auto num_ptr = state.get_pointer<uint32_t>(make_effective_address(0, num_reg));
         auto num_val = state.read<TNum>((TNum*)num_ptr);
 
@@ -867,6 +867,112 @@ void divu(machine_state& state, uint16_t opcode)
 void divs(machine_state& state, uint16_t opcode)
 {
     divide_helper<int16_t, int32_t, -32768, 32767>(state, opcode);
+}
+
+//
+// JMP
+//
+
+void jmp(machine_state& state, uint16_t opcode)
+{
+    auto ea = extract_bits<10, 6>(opcode);
+    
+    uint32_t* jump_to_ptr = state.get_pointer<uint32_t>(ea);
+    uint32_t jump_to = state.read(jump_to_ptr);
+
+    state.set_program_counter(jump_to);
+}
+
+//
+// JSR
+//
+
+void jsr(machine_state& state, uint16_t opcode)
+{
+    auto ea = extract_bits<10, 6>(opcode);
+
+    uint32_t* jump_to_ptr = state.get_pointer<uint32_t>(ea);
+    uint32_t jump_to = state.read(jump_to_ptr);
+
+    state.push_program_counter();
+    state.set_program_counter(jump_to);
+}
+
+//
+// RTS
+//
+
+void rts(machine_state& state, uint16_t opcode)
+{
+    state.pop_program_counter();
+}
+
+//
+// RTR
+//
+
+void rtr(machine_state& state, uint16_t opcode)
+{
+    // Pop the status register (SR) off the stack, but only set the condition code register (CCR)
+    auto status_reg = state.pop<uint16_t>();
+    state.set_condition_code_register(uint8_t(status_reg & 0xff));
+
+    state.pop_program_counter();
+}
+
+//
+// RTE
+//
+
+void rte(machine_state& state, uint16_t opcode)
+{
+    CHECK_SUPERVISOR(state);
+    state.pop_status_register();
+    state.pop_program_counter();
+}
+
+//
+// LINK
+//
+
+void link(machine_state& state, uint16_t opcode)
+{
+    // The contents of the specified address register is pushed onto the stack
+    auto reg = extract_bits<13, 3>(opcode);
+    auto ptr = state.get_pointer<uint32_t>(make_effective_address(1, reg));
+    auto val = state.read<uint32_t>(ptr);
+    state.push<uint32_t>(val);
+
+    // Then, the address register is loaded with the updated stack pointer
+    auto stack_ptr_ptr = state.get_pointer<uint32_t>(make_effective_address(1, 7));
+    auto stack_ptr = state.read<uint32_t>(stack_ptr_ptr);
+    state.write<uint32_t>(ptr, stack_ptr);
+
+    //  Finally, the 16-bit sign-extended displacement is added to the stack pointer
+    auto displacement = state.next<uint16_t>();
+    auto displacement_sign_extended = sign_extend(displacement);
+    auto new_stack_ptr = stack_ptr + displacement_sign_extended;
+    state.write<uint32_t>(stack_ptr_ptr, new_stack_ptr);
+}
+
+//
+// UNLK
+//
+
+void unlk(machine_state& state, uint16_t opcode)
+{
+    // The stack pointer is loaded from the specified address register...
+    auto reg = extract_bits<13, 3>(opcode);
+    auto ptr = state.get_pointer<uint32_t>(make_effective_address(1, reg));
+    auto new_stack_ptr = state.read<uint32_t>(ptr);
+
+    // ... and the old contents of the stack pointer is lost
+    auto stack_ptr_ptr = state.get_pointer<uint32_t>(make_effective_address(1, 7));
+    state.write<uint32_t>(stack_ptr_ptr, new_stack_ptr);
+
+    // The address register is then loaded with the longword pulled off the stack.
+    auto val = state.pop<uint32_t>();
+    state.write<uint32_t>(ptr, val);
 }
 
 

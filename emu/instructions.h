@@ -975,23 +975,83 @@ void unlk(machine_state& state, uint16_t opcode)
     state.write<uint32_t>(ptr, val);
 }
 
+//
+// BRA
+//
+
+void bra(machine_state& state, uint16_t opcode)
+{
+    int32_t displacement = int8_t(extract_bits<8, 8>(opcode));
+    if (displacement == 0)
+    {
+        displacement = int32_t(state.next<int16_t>());
+    }
+    state.offset_program_counter(displacement);
+}
+
+//
+// BSR
+//
+
+void bsr(machine_state& state, uint16_t opcode)
+{
+    int32_t displacement = int8_t(extract_bits<8, 8>(opcode));
+    if (displacement == 0)
+    {
+        displacement = int32_t(state.next<int16_t>());
+    }
+    state.push_program_counter();
+    state.offset_program_counter(displacement);
+}
+
+//
+// TRAP
+//
+
+void trap(machine_state& state, uint16_t opcode)
+{
+    auto vector = extract_bits<12, 4>(opcode);
+    state.exception(32 + vector); // Note: Software traps are using entry 32 - 47 in the vector table
+}
+
+//
+// TRAPV
+//
+
+void trapv(machine_state& state, uint16_t opcode)
+{
+    if (state.get_status_bit<bit::overflow>())
+    {
+        state.exception(7 /* TRAPV */);
+    }
+}
+
+//
+// ILLEGAL
+//
+
+void illegal(machine_state& state, uint16_t opcode)
+{
+    state.exception(4 /* Illegal instruction */);
+}
+
 
 #if false
-void inst_move(machine_state& state, uint16_t opcode);
-void inst_moveq(machine_state& state, uint16_t opcode);
-void inst_movea(machine_state& state, uint16_t opcode);
-void inst_movem(machine_state& state, uint16_t opcode);
-void inst_movep(machine_state& state, uint16_t opcode);
+//void inst_move(machine_state& state, uint16_t opcode);
+//void inst_moveq(machine_state& state, uint16_t opcode);
+//void inst_movea(machine_state& state, uint16_t opcode);
+//void inst_movem(machine_state& state, uint16_t opcode);
+//void inst_movep(machine_state& state, uint16_t opcode);
 
 //
 // Bitwise operators
 //
-void inst_and(machine_state& state, uint16_t opcode);
-void inst_eor(machine_state& state, uint16_t opcode);
-void inst_or(machine_state& state, uint16_t opcode);
-void inst_ori(machine_state& state, uint16_t opcode);
-void inst_andi(machine_state& state, uint16_t opcode);
-void inst_eori(machine_state& state, uint16_t opcode);
+//void inst_and(machine_state& state, uint16_t opcode);
+//void inst_eor(machine_state& state, uint16_t opcode);
+//void inst_or(machine_state& state, uint16_t opcode);
+//void inst_ori(machine_state& state, uint16_t opcode);
+//void inst_andi(machine_state& state, uint16_t opcode);
+//void inst_eori(machine_state& state, uint16_t opcode);
 void inst_not(machine_state& state, uint16_t opcode);
 void inst_btst(machine_state& state, uint16_t opcode);
 void inst_bset(machine_state& state, uint16_t opcode);
@@ -1017,41 +1077,41 @@ void inst_asr_reg(machine_state& state, uint16_t opcode);
 //
 // Arithmetic operators
 //
-void inst_add(machine_state& state, uint16_t opcode);
-void inst_subi(machine_state& state, uint16_t opcode);
-void inst_addi(machine_state& state, uint16_t opcode);
-void inst_addq(machine_state& state, uint16_t opcode);
-void inst_subq(machine_state& state, uint16_t opcode);
-void inst_neg(machine_state& state, uint16_t opcode);
-void inst_negx(machine_state& state, uint16_t opcode);
-void inst_divu(machine_state& state, uint16_t opcode);
-void inst_divs(machine_state& state, uint16_t opcode);
+//void inst_add(machine_state& state, uint16_t opcode);
+//void inst_subi(machine_state& state, uint16_t opcode);
+//void inst_addi(machine_state& state, uint16_t opcode);
+//void inst_addq(machine_state& state, uint16_t opcode);
+//void inst_subq(machine_state& state, uint16_t opcode);
+//void inst_neg(machine_state& state, uint16_t opcode);
+//void inst_negx(machine_state& state, uint16_t opcode);
+//void inst_divu(machine_state& state, uint16_t opcode);
+//void inst_divs(machine_state& state, uint16_t opcode);
 
 //
 // Branch/jump
 //
-void inst_jmp(machine_state& state, uint16_t opcode);
-void inst_jsr(machine_state& state, uint16_t opcode);
-void inst_rts(machine_state& state, uint16_t opcode);
-void inst_rtr(machine_state& state, uint16_t opcode);
-void inst_link(machine_state& state, uint16_t opcode);
-void inst_unlk(machine_state& state, uint16_t opcode);
-void inst_bra(machine_state& state, uint16_t opcode);
-void inst_bsr(machine_state& state, uint16_t opcode);
+//void inst_jmp(machine_state& state, uint16_t opcode);
+//void inst_jsr(machine_state& state, uint16_t opcode);
+//void inst_rts(machine_state& state, uint16_t opcode);
+//void inst_rtr(machine_state& state, uint16_t opcode);
+//void inst_link(machine_state& state, uint16_t opcode);
+//void inst_unlk(machine_state& state, uint16_t opcode);
+//void inst_bra(machine_state& state, uint16_t opcode);
+//void inst_bsr(machine_state& state, uint16_t opcode);
 
 //
 // Exceptions
 //
-void inst_trap(machine_state& state, uint16_t opcode);
-void inst_trapv(machine_state& state, uint16_t opcode);
-void inst_rte(machine_state& state, uint16_t opcode);
-void inst_illegal(machine_state& state, uint16_t opcode);
+//void inst_trap(machine_state& state, uint16_t opcode);
+//void inst_trapv(machine_state& state, uint16_t opcode);
+//void inst_rte(machine_state& state, uint16_t opcode);
+//void inst_illegal(machine_state& state, uint16_t opcode);
 
 
 //
 // Miscellaneous 
 //
-void inst_clr(machine_state& state, uint16_t opcode);
+//void inst_clr(machine_state& state, uint16_t opcode);
 void inst_cmpi(machine_state& state, uint16_t opcode);
 void inst_lea(machine_state& state, uint16_t opcode);
 void inst_pea(machine_state& state, uint16_t opcode);

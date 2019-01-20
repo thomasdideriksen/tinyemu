@@ -342,6 +342,34 @@
         "pattern": [
             {"bits": 13, "valid": [2507]},
             {"bits": 3, "name": "Register (A)"}]
+    },
+    {
+        "name": "bra",
+        "pattern": [
+            {"bits": 8, "valid": [96]},
+            {"bits": 8, "name": "Displacement"}]
+    },
+    {
+        "name": "bsr",
+        "pattern": [
+            {"bits": 8, "valid": [97]},
+            {"bits": 8, "name": "Displacement"}]
+    },
+    {
+        "name": "trap",
+        "pattern": [
+            {"bits": 12, "valid": [1252]},
+            {"bits": 4, "name": "Vector"}]
+    },
+    {
+        "name": "trapv",
+        "pattern": [
+            {"bits": 16, "valid": [20086]}]
+    },
+    {
+        "name": "illegal",
+        "pattern": [
+            {"bits": 16, "valid": [19196]}]
     }
 ]
 

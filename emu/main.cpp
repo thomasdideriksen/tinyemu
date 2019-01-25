@@ -37,6 +37,9 @@ https://en.wikipedia.org/wiki/Motorola_68000
 
 http://web.archive.org/web/20090417202939/http://gwenole.beauchesne.info/en/projects/68ktester <-- Test ROM/binaries
 
+
+https://www.nxp.com/files-static/archives/doc/ref_manual/M68000PRM.pdf <---- Official manual
+
 8, 32-bit data registers and 8, 32-bit address registers
 7 interrupt levels
 56 instructions

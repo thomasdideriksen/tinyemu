@@ -1035,6 +1035,101 @@ void illegal(machine_state& state, uint16_t opcode)
     state.exception(4 /* Illegal instruction */);
 }
 
+struct operation_btst { static uint32_t execute(uint32_t val, uint32_t bit_index) { return val; } };
+struct operation_bchg { static uint32_t execute(uint32_t val, uint32_t bit_index) { return val ^ (1 << bit_index); } };
+struct operation_bclr { static uint32_t execute(uint32_t val, uint32_t bit_index) { return val & (~(1 << bit_index)); } };
+struct operation_bset { static uint32_t execute(uint32_t val, uint32_t bit_index) { return val | (1 << bit_index); } };
+
+//
+// Helper: BTST, BCHG, BCLR, BSET
+//
+
+template <uint16_t mode, typename O>
+inline void bitop_helper(machine_state& state, uint16_t opcode)
+{
+    uint32_t bit_index = 0;
+    switch (mode)
+    {
+    case 0: // Immediate
+    {
+        bit_index = uint32_t(state.next<uint16_t>());
+    }
+    break;
+
+    case 1: // Data register
+    {
+        auto src_reg = extract_bits<4, 3>(opcode);
+        uint32_t* ptr = state.get_pointer<uint32_t>(make_effective_address(0, src_reg));
+        bit_index = state.read(ptr);
+    }
+    break;
+
+    default:
+        THROW("Invalid mode");
+    }
+
+    auto dst_ea = extract_bits<10, 6>(opcode);
+    auto dst_mode = (dst_ea >> 3) & 0x7;
+
+    static uint32_t modulo[8] = { 0x1f, 0x7, 0x7, 0x7, 0x7, 0x7, 0x7, 0x7 }; // Modulo 32 for data registers, otherwise module 8 (for memory locations)
+    bit_index &= modulo[dst_mode];
+
+    uint32_t* dst_ptr = state.get_pointer<uint32_t>(dst_ea);
+    uint32_t dst = state.read(dst_ptr);
+
+    auto result = O::template execute(dst, bit_index);
+
+    const uint32_t mask = (1 << bit_index);
+    state.set_status_bit<bit::zero>((result & mask) == 0);
+
+    state.write(dst_ptr, result);
+}
+
+//
+// BTST
+// Test bit
+//
+
+template <uint16_t mode>
+void btst(machine_state& state, uint16_t opcode)
+{
+    bitop_helper<mode, operation_btst>(state, opcode);
+}
+
+//
+// BSET
+// Test and set bit
+//
+
+template <uint16_t mode>
+void bset(machine_state& state, uint16_t opcode)
+{
+    bitop_helper<mode, operation_bset>(state, opcode);
+}
+
+//
+// BCLR
+// Test and clear bit
+//
+
+template <uint16_t mode>
+void bclr(machine_state& state, uint16_t opcode)
+{
+    bitop_helper<mode, operation_bclr>(state, opcode);
+}
+
+//
+// BCHG
+// Test and change (flip) bit
+//
+
+template <uint16_t mode>
+void bchg(machine_state& state, uint16_t opcode)
+{
+    bitop_helper<mode, operation_bchg>(state, opcode);
+}
+
+
 
 #if false
 //void inst_move(machine_state& state, uint16_t opcode);

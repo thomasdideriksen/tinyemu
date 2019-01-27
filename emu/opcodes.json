@@ -387,6 +387,64 @@
             {"bits": 1, "name": "mode", "valid": [1], "template": true},
             {"bits": 2, "valid": [0]},
             {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "bchg",
+        "pattern": [
+            {"bits": 7, "valid": [4]},
+            {"bits": 1, "name": "mode", "valid": [0], "template": true},
+            {"bits": 2, "valid": [1]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "bchg",
+        "pattern": [
+            {"bits": 4, "valid": [0]},
+            {"bits": 3, "name": "Register (D)"},
+            {"bits": 1, "name": "mode", "valid": [1], "template": true},
+            {"bits": 2, "valid": [1]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "bclr",
+        "pattern": [
+            {"bits": 7, "valid": [4]},
+            {"bits": 1, "name": "mode", "valid": [0], "template": true},
+            {"bits": 2, "valid": [2]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "bclr",
+        "pattern": [
+            {"bits": 4, "valid": [0]},
+            {"bits": 3, "name": "Register (D)"},
+            {"bits": 1, "name": "mode", "valid": [1], "template": true},
+            {"bits": 2, "valid": [2]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "bset",
+        "pattern": [
+            {"bits": 7, "valid": [4]},
+            {"bits": 1, "name": "mode", "valid": [0], "template": true},
+            {"bits": 2, "valid": [3]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "bset",
+        "pattern": [
+            {"bits": 4, "valid": [0]},
+            {"bits": 3, "name": "Register (D)"},
+            {"bits": 1, "name": "mode", "valid": [1], "template": true},
+            {"bits": 2, "valid": [3]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "_not",
+        "pattern": [
+            {"bits": 8, "valid": [70]},
+            {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}, "template": true},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8]}]
     }
 ]
 

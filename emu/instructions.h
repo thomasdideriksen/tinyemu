@@ -1045,7 +1045,7 @@ struct operation_bset { static uint32_t execute(uint32_t val, uint32_t bit_index
 //
 
 template <uint16_t mode, typename O>
-inline void bitop_helper(machine_state& state, uint16_t opcode)
+INLINE void bitop_helper(machine_state& state, uint16_t opcode)
 {
     uint32_t bit_index = 0;
     switch (mode)
@@ -1129,6 +1129,26 @@ void bchg(machine_state& state, uint16_t opcode)
     bitop_helper<mode, operation_bchg>(state, opcode);
 }
 
+//
+// NOT
+//
+
+template <typename T>
+void _not(machine_state& state, uint16_t opcode)
+{
+    auto ea = extract_bits<10, 6>(opcode);
+
+    auto ptr = state.get_pointer<T>(ea);
+    T value = state.read(ptr);
+    T result = ~value;
+
+    state.set_status_bit<bit::negative>(is_negative(result));
+    state.set_status_bit<bit::zero>(result == 0);
+    state.set_status_bit<bit::overflow>(false);
+    state.set_status_bit<bit::carry>(false);
+
+    state.write<T>(ptr, result);
+}
 
 
 #if false
@@ -1147,11 +1167,11 @@ void bchg(machine_state& state, uint16_t opcode)
 //void inst_ori(machine_state& state, uint16_t opcode);
 //void inst_andi(machine_state& state, uint16_t opcode);
 //void inst_eori(machine_state& state, uint16_t opcode);
-void inst_not(machine_state& state, uint16_t opcode);
-void inst_btst(machine_state& state, uint16_t opcode);
-void inst_bset(machine_state& state, uint16_t opcode);
-void inst_bclr(machine_state& state, uint16_t opcode);
-void inst_bchg(machine_state& state, uint16_t opcode);
+//void inst_not(machine_state& state, uint16_t opcode);
+//void inst_btst(machine_state& state, uint16_t opcode);
+//void inst_bset(machine_state& state, uint16_t opcode);
+//void inst_bclr(machine_state& state, uint16_t opcode);
+//void inst_bchg(machine_state& state, uint16_t opcode);
 void inst_lsl_mem(machine_state& state, uint16_t opcode);
 void inst_lsl_reg(machine_state& state, uint16_t opcode);
 void inst_lsr_mem(machine_state& state, uint16_t opcode);

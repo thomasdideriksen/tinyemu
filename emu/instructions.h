@@ -1151,6 +1151,115 @@ void _not(machine_state& state, uint16_t opcode)
 }
 
 
+//
+// LEA
+// Load effective address
+//
+
+void lea(machine_state& state, uint16_t opcode)
+{
+    auto dst_reg = extract_bits<4, 3>(opcode);
+    auto src_ea = extract_bits<10, 6>(opcode);
+
+    uint32_t* src_ptr = state.get_pointer<uint32_t>(src_ea);
+    uint32_t* dst_ptr = state.get_pointer<uint32_t>(make_effective_address(1 /* Address register direct */, dst_reg));
+
+    uint32_t offset = state.pointer_to_memory_offset(src_ptr);
+    state.write(dst_ptr, offset);
+}
+
+//
+// PEA
+// Push effective address onto stack
+//
+
+void pea(machine_state& state, uint16_t opcode)
+{
+    auto src_ea = extract_bits<10, 6>(opcode);
+
+    uint32_t* src_ptr = state.get_pointer<uint32_t>(src_ea);
+
+    uint32_t offset = state.pointer_to_memory_offset(src_ptr);
+    state.push(offset);
+}
+
+//
+// CHK
+// Trap if value is out of specified bounds
+//
+
+void chk(machine_state& state, uint16_t opcode)
+{
+    auto value_reg = extract_bits<4, 3>(opcode);
+    int16_t* value_ptr = (int16_t*)state.get_pointer<uint16_t>(make_effective_address(0 /* Data register direct */, value_reg));
+    int16_t value = state.read(value_ptr);
+
+    auto src_ea = extract_bits<10, 6>(opcode);
+    auto src_ptr = state.get_pointer<uint16_t>(src_ea);
+    auto upper_bound = state.read(src_ptr);
+
+    if (value < 0 || value > upper_bound)
+    {
+        state.exception(6 /* CHK out of bounds */);
+    }
+}
+
+//
+// CMPI
+// Compare immediate
+//
+
+template <typename T>
+void cmpi(machine_state& state, uint16_t opcode)
+{
+    auto ea = extract_bits<10, 6>(opcode);
+    T* ptr = state.get_pointer<T>(ea);
+    T value = state.read(ptr);
+
+    typedef traits<T>::extension_word_type_t extension_t;
+    extension_t imm = state.next<extension_t>();
+
+    typedef traits<T>::higher_precision_type_t high_precision_t;
+    high_precision_t result_high_precision =
+        high_precision_t(value) -
+        high_precision_t(imm);
+
+    T result = T(result_high_precision);
+
+    state.set_status_bit<bit::negative>(is_negative(result));
+    state.set_status_bit<bit::zero>(result == 0);
+    state.set_status_bit<bit::overflow>(has_overflow(value, T(imm), result));
+    state.set_status_bit<bit::carry>(has_borrow<T>(value, T(imm)));
+}
+
+//
+// CMPM
+//
+
+template <typename T>
+void cmpm(machine_state& state, uint16_t opcode)
+{
+    auto src_reg = extract_bits<13, 3>(opcode);
+    auto dst_reg = extract_bits<4, 3>(opcode);
+ 
+    // Note: Address register indirect with postincrement
+    auto src_ptr = state.get_pointer<T>(make_effective_address(3, src_reg));
+    auto dst_ptr = state.get_pointer<T>(make_effective_address(3, dst_reg));
+ 
+    T src_val = state.read<T>(src_ptr);
+    T dst_val = state.read<T>(dst_ptr);
+
+    T result = dst_val - src_val;
+
+    state.set_status_bit<bit::negative>(is_negative<T>(result));
+    state.set_status_bit<bit::zero>(result == 0);
+    state.set_status_bit<bit::overflow>(has_overflow(dst_val, src_val, result));
+    state.set_status_bit<bit::carry>(has_borrow<T>(dst_val, src_val));
+}
+
+
+
+
 #if false
 //void inst_move(machine_state& state, uint16_t opcode);
 //void inst_moveq(machine_state& state, uint16_t opcode);
@@ -1228,9 +1337,9 @@ void inst_asr_reg(machine_state& state, uint16_t opcode);
 //
 //void inst_clr(machine_state& state, uint16_t opcode);
 void inst_cmpi(machine_state& state, uint16_t opcode);
-void inst_lea(machine_state& state, uint16_t opcode);
-void inst_pea(machine_state& state, uint16_t opcode);
-void inst_chk(machine_state& state, uint16_t opcode);
+//void inst_lea(machine_state& state, uint16_t opcode);
+//void inst_pea(machine_state& state, uint16_t opcode);
+//void inst_chk(machine_state& state, uint16_t opcode);
 void inst_scc(machine_state& state, uint16_t opcode);
 void inst_bcc(machine_state& state, uint16_t opcode);
 void inst_dbcc(machine_state& state, uint16_t opcode);

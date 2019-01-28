@@ -93,6 +93,12 @@ INLINE bool has_carry(T higher_precision_result)
 }
 
 template <typename T>
+INLINE bool has_borrow(T a, T b)
+{
+    return a < b;
+}
+
+template <typename T>
 INLINE bool has_overflow(T op0, T op1, T result)
 {
     bool op0_negative = is_negative(op0);

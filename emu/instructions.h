@@ -1207,8 +1207,9 @@ void chk(machine_state& state, uint16_t opcode)
 //
 // Helper: CMPI, CMPM, CMPA, CMP
 //
+
 template <typename T>
-void cmp_helper(machine_state& state, T a, T b)
+INLINE void cmp_helper(machine_state& state, T a, T b)
 {
     T result = a - b;
 
@@ -1217,7 +1218,6 @@ void cmp_helper(machine_state& state, T a, T b)
     state.set_status_bit<bit::overflow>(has_overflow(a, b, result));
     state.set_status_bit<bit::carry>(has_borrow<T>(a, b));
 }
-
 
 //
 // CMPI
@@ -1267,13 +1267,13 @@ void cmpa(machine_state& state, uint16_t opcode)
     auto src_ea = extract_bits<10, 6>(opcode);
     auto dst_reg = extract_bits<4, 3>(opcode);
 
-    auto src_ptr = state.get_pointer<T>(src_ea);
-    auto dst_ptr = state.get_pointer<T>(make_effective_address(1, dst_reg));
+    T* src_ptr = state.get_pointer<T>(src_ea);
+    uint32_t* dst_ptr = state.get_pointer<uint32_t>(make_effective_address(1, dst_reg));
 
-    auto src_val = state.read(src_ptr);
-    auto dst_val = state.read(dst_ptr);
+    uint32_t src_val = sign_extend<T>(state.read<T>(src_ptr));
+    uint32_t dst_val = state.read<uint32_t>(dst_ptr);
 
-    cmp_helper<T>(state, dst_val, src_val);
+    cmp_helper<uint32_t>(state, dst_val, src_val);
 }
 
 //
@@ -1293,6 +1293,34 @@ void cmp(machine_state& state, uint16_t opcode)
     auto dst_val = state.read(dst_ptr);
 
     cmp_helper<T>(state, dst_val, src_val);
+}
+
+//
+// EXT
+// Sign extend a data register
+//
+
+template <typename T>
+void ext(machine_state& state, uint16_t opcode)
+{
+    //
+    // TODO: Verify
+    //
+
+    auto reg = extract_bits<13, 3>(opcode);
+
+    typedef traits<T>::lower_precision_type_t low_precision_t;
+    low_precision_t* ptr = state.get_pointer<low_precision_t>(0, reg);
+    low_precision_t value = state.read<low_precision_t>(ptr);
+
+    T result = (T)(sign_extend<low_precision_t>(value) & traits<T>::max);
+
+    state.set_status_bit<bit::negative>(is_negative<T>(result));
+    state.set_status_bit<bit::zero>(result == 0);
+    state.set_status_bit<bit::overflow>(false);
+    state.set_status_bit<bit::carry>(false);
+
+    state.write<T>((T*)ptr, result);
 }
 
 
@@ -1372,7 +1400,7 @@ void inst_asr_reg(machine_state& state, uint16_t opcode);
 // Miscellaneous 
 //
 //void inst_clr(machine_state& state, uint16_t opcode);
-void inst_cmpi(machine_state& state, uint16_t opcode);
+//void inst_cmpi(machine_state& state, uint16_t opcode);
 //void inst_lea(machine_state& state, uint16_t opcode);
 //void inst_pea(machine_state& state, uint16_t opcode);
 //void inst_chk(machine_state& state, uint16_t opcode);

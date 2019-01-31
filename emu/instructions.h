@@ -9,10 +9,10 @@
 template <typename T>
 void move(machine_state& state, uint16_t opcode)
 {
-    auto src = extract_bits<4, 6>(opcode);
-    auto dst = extract_bits<10, 6>(opcode);
-
-    src = (src >> 3) | ((src & 0x3) << 3); // Note: Swap upper and lower 3 bits
+    auto src = extract_bits<10, 6>(opcode);
+    auto dst = extract_bits<4, 6>(opcode);
+    
+    dst = (dst >> 3) | ((dst & 0x3) << 3); // Note: Swap upper and lower 3 bits
 
     T* src_ptr = state.get_pointer<T>(src);
     T* dst_ptr = state.get_pointer<T>(dst);
@@ -1205,6 +1205,21 @@ void chk(machine_state& state, uint16_t opcode)
 }
 
 //
+// Helper: CMPI, CMPM, CMPA, CMP
+//
+template <typename T>
+void cmp_helper(T a, T b)
+{
+    T result = a - b;
+
+    state.set_status_bit<bit::negative>(is_negative<T>(result));
+    state.set_status_bit<bit::zero>(result == 0);
+    state.set_status_bit<bit::overflow>(has_overflow(a, b, result));
+    state.set_status_bit<bit::carry>(has_borrow<T>(a, b));
+}
+
+
+//
 // CMPI
 // Compare immediate
 //
@@ -1219,17 +1234,7 @@ void cmpi(machine_state& state, uint16_t opcode)
     typedef traits<T>::extension_word_type_t extension_t;
     extension_t imm = state.next<extension_t>();
 
-    typedef traits<T>::higher_precision_type_t high_precision_t;
-    high_precision_t result_high_precision =
-        high_precision_t(value) -
-        high_precision_t(imm);
-
-    T result = T(result_high_precision);
-
-    state.set_status_bit<bit::negative>(is_negative(result));
-    state.set_status_bit<bit::zero>(result == 0);
-    state.set_status_bit<bit::overflow>(has_overflow(value, T(imm), result));
-    state.set_status_bit<bit::carry>(has_borrow<T>(value, T(imm)));
+    cmp_helper<T>(value, T(imm));
 }
 
 //
@@ -1249,15 +1254,45 @@ void cmpm(machine_state& state, uint16_t opcode)
     T src_val = state.read<T>(src_ptr);
     T dst_val = state.read<T>(dst_ptr);
 
-    T result = dst_val - src_val;
-
-    state.set_status_bit<bit::negative>(is_negative<T>(result));
-    state.set_status_bit<bit::zero>(result == 0);
-    state.set_status_bit<bit::overflow>(has_overflow(dst_val, src_val, result));
-    state.set_status_bit<bit::carry>(has_borrow<T>(dst_val, src_val));
+    cmp_helper<T>(dst_val, src_val);
 }
 
+//
+// CMPA
+//
 
+template <typename T>
+void cmpa(machine_state& state, uint16_t opcode)
+{
+    auto src_ea = extract_bits<10, 6>(opcode);
+    auto dst_reg = extract_bits<4, 3>(opcode);
+
+    auto src_ptr = state.get_pointer<T>(src_ea);
+    auto dst_ptr = state.get_pointer<T>(make_effective_address(1, dst_reg));
+
+    auto src_val = state.read(src_ptr);
+    auto dst_val = state.read(dst_ptr);
+
+    cmp_helper<T>(dst_val, src_val);
+}
+
+//
+// CMP
+//
+template <typename T>
+void cmp(machine_state& state, uint16_t opcode)
+{
+    auto src_ea = extract_bits<10, 6>(opcode);
+    auto dst_reg = extract_bits<4, 3>(opcode);
+
+    auto src_ptr = state.get_pointer<T>(src_ea);
+    auto dst_ptr = state.get_pointer<T>(make_effective_address(0, dst_reg));
+
+    auto src_val = state.read(src_ptr);
+    auto dst_val = state.read(dst_ptr);
+
+    cmp_helper<T>(dst_val, src_val);
+}
 
 
 #if false

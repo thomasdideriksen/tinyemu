@@ -1208,7 +1208,7 @@ void chk(machine_state& state, uint16_t opcode)
 // Helper: CMPI, CMPM, CMPA, CMP
 //
 template <typename T>
-void cmp_helper(T a, T b)
+void cmp_helper(machine_state& state, T a, T b)
 {
     T result = a - b;
 
@@ -1234,7 +1234,7 @@ void cmpi(machine_state& state, uint16_t opcode)
     typedef traits<T>::extension_word_type_t extension_t;
     extension_t imm = state.next<extension_t>();
 
-    cmp_helper<T>(value, T(imm));
+    cmp_helper<T>(state, value, T(imm));
 }
 
 //
@@ -1254,7 +1254,7 @@ void cmpm(machine_state& state, uint16_t opcode)
     T src_val = state.read<T>(src_ptr);
     T dst_val = state.read<T>(dst_ptr);
 
-    cmp_helper<T>(dst_val, src_val);
+    cmp_helper<T>(state, dst_val, src_val);
 }
 
 //
@@ -1273,12 +1273,13 @@ void cmpa(machine_state& state, uint16_t opcode)
     auto src_val = state.read(src_ptr);
     auto dst_val = state.read(dst_ptr);
 
-    cmp_helper<T>(dst_val, src_val);
+    cmp_helper<T>(state, dst_val, src_val);
 }
 
 //
 // CMP
 //
+
 template <typename T>
 void cmp(machine_state& state, uint16_t opcode)
 {
@@ -1291,7 +1292,7 @@ void cmp(machine_state& state, uint16_t opcode)
     auto src_val = state.read(src_ptr);
     auto dst_val = state.read(dst_ptr);
 
-    cmp_helper<T>(dst_val, src_val);
+    cmp_helper<T>(state, dst_val, src_val);
 }
 
 

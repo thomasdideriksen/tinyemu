@@ -4,6 +4,7 @@
 
 //
 // MOVE
+// Move data
 //
 
 template <typename T>
@@ -29,6 +30,7 @@ void move(machine_state& state, uint16_t opcode)
 
 //
 // MOVE from SR
+// Move data from status register
 //
 
 void move_from_sr(machine_state& state, uint16_t opcode)
@@ -42,6 +44,7 @@ void move_from_sr(machine_state& state, uint16_t opcode)
 
 //
 // MOVE to CCR
+// Move data to condition code register
 // 
 
 void move_to_ccr(machine_state& state, uint16_t opcode)
@@ -55,6 +58,7 @@ void move_to_ccr(machine_state& state, uint16_t opcode)
 
 //
 // MOVE to SR
+// Move data to status register
 //
 
 template <uint16_t src>
@@ -69,6 +73,7 @@ void move_to_sr(machine_state& state, uint16_t opcode)
 
 //
 // MOVE USP
+// Read or write user stack pointer
 //
 
 template <uint16_t dir>
@@ -101,6 +106,7 @@ void move_usp(machine_state& state, uint16_t opcode)
 
 //
 // MOVEQ
+// Move quick (move literal)
 //
 
 void moveq(machine_state& state, uint16_t opcode)
@@ -121,6 +127,7 @@ void moveq(machine_state& state, uint16_t opcode)
 
 //
 // MOVEA
+// Move address
 //
 
 template <typename T>
@@ -137,6 +144,7 @@ void movea(machine_state& state, uint16_t opcode)
 
 //
 // MOVEM
+// Move multiple registers
 //
 
 template <uint16_t dir, typename T>
@@ -186,6 +194,7 @@ void movem(machine_state& state, uint16_t opcode)
 
 //
 // MOVEP
+// Move peripheral data
 //
 
 template <uint16_t dir, typename T>
@@ -213,6 +222,7 @@ void movep(machine_state& state, uint16_t opcode)
 
 //
 // CLR
+// Clear operand
 //
 
 template <typename T>
@@ -285,6 +295,7 @@ INLINE void arithmetic_helper(machine_state& state, uint16_t opcode)
 
 //
 // ADD
+// Arithmetic add
 //
 
 template <uint16_t mode, typename T>
@@ -295,6 +306,7 @@ void add(machine_state& state, uint16_t opcode)
 
 //
 // SUB
+// Arithmetic subtract
 //
 
 template <uint16_t mode, typename T>
@@ -342,6 +354,7 @@ INLINE void arithmetic_imm_helper(machine_state& state, uint16_t opcode)
 
 //
 // ADDI
+// Arithmetic add immediate
 //
 
 template <typename T>
@@ -352,6 +365,7 @@ void addi(machine_state& state, uint16_t opcode)
 
 //
 // SUBI
+// Arithmetic subtract immediate
 //
 
 template <typename T>
@@ -407,7 +421,9 @@ INLINE void arithmetic_quick_helper(machine_state& state, uint16_t opcode)
 
 //
 // ADDQ
+// Arithmetic add quick (literal)
 //
+
 template <typename T>
 void addq(machine_state& state, uint16_t opcode)
 {
@@ -416,7 +432,9 @@ void addq(machine_state& state, uint16_t opcode)
 
 //
 // SUBQ
+// Arithmetic subtract quick (literal)
 //
+
 template <typename T>
 void subq(machine_state& state, uint16_t opcode)
 {
@@ -447,6 +465,7 @@ INLINE void arithmetic_address_helper(machine_state& state, uint16_t opcode)
 
 //
 // ADDA
+// Arithmetic add address
 //
 
 template <typename T>
@@ -457,6 +476,7 @@ void adda(machine_state& state, uint16_t opcode)
 
 //
 // SUBA
+// Arithmetic subtract address
 //
 
 template <typename T>
@@ -523,6 +543,7 @@ INLINE void arithmetic_extended_helper(machine_state& state, uint16_t opcode)
 
 //
 // ADDX
+// Arithmetic add extended
 //
 
 template <typename T, uint16_t mode>
@@ -533,6 +554,7 @@ void addx(machine_state& state, uint16_t opcode)
 
 //
 // SUBX
+// Arithmetic subtract extended
 //
 
 template <typename T, uint16_t mode>
@@ -561,6 +583,7 @@ INLINE void logical_immediate_to_ccr_helper(machine_state& state, uint16_t opcod
 
 //
 // ORI to CCR
+// Logical or immediate to condition code register
 //
 
 void ori_to_ccr(machine_state& state, uint16_t opcode)
@@ -570,6 +593,7 @@ void ori_to_ccr(machine_state& state, uint16_t opcode)
 
 //
 // ANDI to CCR
+// Logical and immediate to condition code register
 //
 
 void andi_to_ccr(machine_state& state, uint16_t opcode)
@@ -579,6 +603,7 @@ void andi_to_ccr(machine_state& state, uint16_t opcode)
 
 //
 // EORI to CCR
+// Logical exclusive or immediate to condition code register
 //
 
 void eori_to_ccr(machine_state& state, uint16_t opcode)
@@ -603,6 +628,7 @@ INLINE void logical_immediate_to_sr_helper(machine_state& state, uint16_t opcode
 
 //
 // ORI to SR
+// Logical or immediate to status register
 //
 
 void ori_to_sr(machine_state& state, uint16_t opcode)
@@ -612,6 +638,7 @@ void ori_to_sr(machine_state& state, uint16_t opcode)
 
 //
 // ANDI to SR
+// Logical and immediate to status register
 //
 
 void andi_to_sr(machine_state& state, uint16_t opcode)
@@ -621,6 +648,7 @@ void andi_to_sr(machine_state& state, uint16_t opcode)
 
 //
 // EORI to SR
+// Logical exclusive or immeditate to status register
 //
 
 void eori_to_sr(machine_state& state, uint16_t opcode)
@@ -653,6 +681,7 @@ INLINE void logical_immediate_helper(machine_state& state, uint16_t opcode)
 
 //
 // ORI
+// Logical or immediate
 //
 
 template <typename T>
@@ -663,6 +692,7 @@ void ori(machine_state& state, uint16_t opcode)
 
 //
 // ANDI
+// Logical and immediate
 //
 
 template <typename T>
@@ -673,6 +703,7 @@ void andi(machine_state& state, uint16_t opcode)
 
 //
 // EORI
+// Logical exclusive or immeditate
 //
 
 template <typename T>
@@ -715,6 +746,7 @@ INLINE void logical_helper(machine_state& state, uint16_t opcode)
 
 //
 // OR
+// Logical or
 //
 
 template <uint16_t dir, typename T>
@@ -725,6 +757,7 @@ void _or(machine_state& state, uint16_t opcode)
 
 //
 // AND
+// Logical and
 //
 
 template <uint16_t dir, typename T>
@@ -735,6 +768,7 @@ void _and(machine_state& state, uint16_t opcode)
 
 //
 // EOR
+// Logical exclusive or
 //
 
 template <typename T>
@@ -782,6 +816,7 @@ INLINE void negate_helper(machine_state& state, uint16_t opcode)
 
 //
 // NEG
+// Negate
 //
 
 template <typename T>
@@ -792,6 +827,7 @@ void neg(machine_state& state, uint16_t opcode)
 
 //
 // NEGX
+// Negate with extend
 //
 
 template <typename T>
@@ -853,6 +889,7 @@ INLINE void divide_helper(machine_state& state, uint16_t opcode)
 
 //
 // DIVU
+// Unsigned divide
 //
 
 void divu(machine_state& state, uint16_t opcode)
@@ -862,6 +899,7 @@ void divu(machine_state& state, uint16_t opcode)
 
 //
 // DIVS
+// Signed divide
 //
 
 void divs(machine_state& state, uint16_t opcode)
@@ -871,6 +909,7 @@ void divs(machine_state& state, uint16_t opcode)
 
 //
 // JMP
+// Unconditional jump
 //
 
 void jmp(machine_state& state, uint16_t opcode)
@@ -885,6 +924,7 @@ void jmp(machine_state& state, uint16_t opcode)
 
 //
 // JSR
+// Jump to subroutine
 //
 
 void jsr(machine_state& state, uint16_t opcode)
@@ -900,6 +940,7 @@ void jsr(machine_state& state, uint16_t opcode)
 
 //
 // RTS
+// Return from subroutine
 //
 
 void rts(machine_state& state, uint16_t opcode)
@@ -909,6 +950,7 @@ void rts(machine_state& state, uint16_t opcode)
 
 //
 // RTR
+// Return and restore condition codes
 //
 
 void rtr(machine_state& state, uint16_t opcode)
@@ -922,6 +964,7 @@ void rtr(machine_state& state, uint16_t opcode)
 
 //
 // RTE
+// Return from exception
 //
 
 void rte(machine_state& state, uint16_t opcode)
@@ -933,6 +976,7 @@ void rte(machine_state& state, uint16_t opcode)
 
 //
 // LINK
+// Link and allocate
 //
 
 void link(machine_state& state, uint16_t opcode)
@@ -957,6 +1001,7 @@ void link(machine_state& state, uint16_t opcode)
 
 //
 // UNLK
+// Unlink
 //
 
 void unlk(machine_state& state, uint16_t opcode)
@@ -977,6 +1022,7 @@ void unlk(machine_state& state, uint16_t opcode)
 
 //
 // BRA
+// Branch always
 //
 
 void bra(machine_state& state, uint16_t opcode)
@@ -991,6 +1037,7 @@ void bra(machine_state& state, uint16_t opcode)
 
 //
 // BSR
+// Branch to subroutine
 //
 
 void bsr(machine_state& state, uint16_t opcode)
@@ -1006,6 +1053,7 @@ void bsr(machine_state& state, uint16_t opcode)
 
 //
 // TRAP
+// Trap (software interrupt)
 //
 
 void trap(machine_state& state, uint16_t opcode)
@@ -1016,6 +1064,7 @@ void trap(machine_state& state, uint16_t opcode)
 
 //
 // TRAPV
+// Trap on overflow
 //
 
 void trapv(machine_state& state, uint16_t opcode)
@@ -1028,6 +1077,7 @@ void trapv(machine_state& state, uint16_t opcode)
 
 //
 // ILLEGAL
+// Illegal instruction
 //
 
 void illegal(machine_state& state, uint16_t opcode)
@@ -1131,6 +1181,7 @@ void bchg(machine_state& state, uint16_t opcode)
 
 //
 // NOT
+// Logical not
 //
 
 template <typename T>
@@ -1239,6 +1290,7 @@ void cmpi(machine_state& state, uint16_t opcode)
 
 //
 // CMPM
+// Compare memory with memory
 //
 
 template <typename T>
@@ -1259,6 +1311,7 @@ void cmpm(machine_state& state, uint16_t opcode)
 
 //
 // CMPA
+// Compare address
 //
 
 template <typename T>
@@ -1278,6 +1331,7 @@ void cmpa(machine_state& state, uint16_t opcode)
 
 //
 // CMP
+// Compare
 //
 
 template <typename T>
@@ -1364,6 +1418,7 @@ void tas(machine_state& state, uint16_t opcode)
 
 //
 // TST
+// Test and operand
 //
 
 template <typename T>
@@ -1445,6 +1500,7 @@ void exg(machine_state& state, uint16_t opcode)
 
 //
 // STOP
+// Load status register and stop
 //
 
 void stop(machine_state& state, uint16_t opcode)
@@ -1455,6 +1511,7 @@ void stop(machine_state& state, uint16_t opcode)
     if (state.get_status_bit<bit::trace>())
     {
         state.exception(9 /* Trace exception */);
+        return;
     }
 
     bool mode_change_attempt = (imm & (1 << uint32_t(bit::supervisor))) == 0;
@@ -1462,6 +1519,7 @@ void stop(machine_state& state, uint16_t opcode)
     if (mode_change_attempt)
     {
         state.exception(8 /* Privilege violation */);
+        return;
     }
 
     auto ptr = state.get_pointer<uint16_t>(reg::status_register);

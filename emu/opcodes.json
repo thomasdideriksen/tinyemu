@@ -553,6 +553,45 @@
         "name": "stop",
         "pattern": [
             {"bits": 16, "valid": [20082]}]
+    },
+    {
+        "name": "scc",
+        "pattern": [
+            {"bits": 4, "valid": [5]},
+            {"bits": 4, "name": "Condition", "template": true},
+            {"bits": 2, "valid": [3]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8]}]
+    },
+    {
+        "name": "bcc",
+        "pattern": [
+            {"bits": 4, "valid": [6]},
+            {"bits": 4, "name": "Condition", "valid": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], "template": true},
+            {"bits": 8, "name": "Displacement"}]
+    },
+    {
+        "name": "dbcc",
+        "pattern": [
+            {"bits": 4, "valid": [5]},
+            {"bits": 4, "name": "Condition", "template": true},
+            {"bits": 5, "valid": [25]},
+            {"bits": 3, "name": "Register (D)"}]
+    },
+    {
+        "name": "mulu",
+        "pattern": [
+            {"bits": 4, "valid": [12]},
+            {"bits": 3, "name": "Register (D)"},
+            {"bits": 3, "valid": [3]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "muls",
+        "pattern": [
+            {"bits": 4, "valid": [12]},
+            {"bits": 3, "name": "Register (D)"},
+            {"bits": 3, "valid": [7]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
     }
 ]
 

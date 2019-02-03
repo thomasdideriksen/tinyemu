@@ -1528,6 +1528,124 @@ void stop(machine_state& state, uint16_t opcode)
     state.stop();
 }
 
+//
+// Helper: Scc, Bcc
+//
+
+template <uint16_t condition>
+INLINE bool evaluate_condition(machine_state& state)
+{
+    bool c = state.get_status_bit<bit::carry>();
+    bool z = state.get_status_bit<bit::zero>();
+    bool n = state.get_status_bit<bit::negative>();
+    bool v = state.get_status_bit<bit::overflow>();
+
+    switch (condition)
+    {
+    case 0x0: return true;                                // True (T)
+    case 0x1: return false;                               // False (F)
+    case 0x2: return !c && !z;                            // High (HI)
+    case 0x3: return c || z;                              // Low or same (LS)
+    case 0x4: return !c;                                  // Carry clear (CC)
+    case 0x5: return c;                                   // Carry set (CS)
+    case 0x6: return !z;                                  // Not equal (NE)
+    case 0x7: return z;                                   // Equal (EQ)
+    case 0x8: return !v;                                  // Overflow clear (VC)
+    case 0x9: return v;                                   // Overflow set (VS)
+    case 0xa: return !n;                                  // Plus (PL)
+    case 0xb: return n;                                   // Minus (MI)
+    case 0xc: return (n && v) || (!n && !v);              // Greater or equal (GE)
+    case 0xd: return (n && !v) || (!n && v);              // Less than (LT)
+    case 0xe: return (n && v && !z) || (!n && !v && !z);  // Greater than (GT)
+    case 0xf: return z || (n && !v) || (!n && v);         // Less or equal (LE)
+    default:
+        THROW("Invalid condition: " << condition);
+    }
+}
+
+//
+// Scc
+// Set on condition
+//
+
+template <uint16_t condition>
+void scc(machine_state& state, uint16_t opcode)
+{
+    auto ea = extract_bits<10, 6>(opcode);
+    auto ptr = state.get_pointer<uint8_t>(ea);
+
+    bool result = evaluate_condition<condition>(state);
+    state.write<uint8_t>(ptr, uint8_t(result ? 0xff : 0x00));
+}
+
+//
+// Bcc
+// Branch on condition
+//
+
+template <uint16_t condition>
+void bcc(machine_state& state, uint16_t opcode)
+{
+    bool result = evaluate_condition<condition>(state);
+
+    if (result)
+    {
+        int32_t displacement = int8_t(extract_bits<8, 8>(opcode));
+        if (displacement == 0)
+        {
+            displacement = int32_t(state.next<int16_t>());
+        }
+        state.offset_program_counter(displacement);
+    }
+}
+
+//
+// DBcc
+// Test condition, decrement and branch
+//
+
+template <uint16_t condition>
+void dbcc(machine_state& state, uint16_t opcode)
+{
+    bool result = evaluate_condition<condition>(state);
+    auto displacement = int32_t(state.next<int16_t>());
+    
+    if (result)
+    {
+        auto reg = extract_bits<13, 3>(opcode);
+        uint16_t* ptr = state.get_pointer<uint16_t>(make_effective_address(0, reg));
+        int16_t val = state.read<int16_t>((int16_t*)ptr) - int16_t(1);
+        state.write(ptr, uint16_t(val));
+
+        if (val != -1)
+        {
+            state.offset_program_counter(displacement);
+        }
+    }
+}
+
+//
+// MULU
+// Unsigned multiply
+//
+
+void mulu(machine_state& state, uint16_t opcode)
+{
+
+}
+
+//
+// MULS
+// Signed multiply
+//
+
+void muls(machine_state& state, uint16_t opcode)
+{
+
+}
+
+
+
 #if false
 //void inst_move(machine_state& state, uint16_t opcode);
 //void inst_moveq(machine_state& state, uint16_t opcode);
@@ -1608,9 +1726,9 @@ void inst_asr_reg(machine_state& state, uint16_t opcode);
 //void inst_lea(machine_state& state, uint16_t opcode);
 //void inst_pea(machine_state& state, uint16_t opcode);
 //void inst_chk(machine_state& state, uint16_t opcode);
-void inst_scc(machine_state& state, uint16_t opcode);
-void inst_bcc(machine_state& state, uint16_t opcode);
-void inst_dbcc(machine_state& state, uint16_t opcode);
+//void inst_scc(machine_state& state, uint16_t opcode);
+//void inst_bcc(machine_state& state, uint16_t opcode);
+//void inst_dbcc(machine_state& state, uint16_t opcode);
 //void inst_ext(machine_state& state, uint16_t opcode);
 //void inst_swap(machine_state& state, uint16_t opcode);
 //void inst_tas(machine_state& state, uint16_t opcode);

@@ -1303,17 +1303,13 @@ void cmp(machine_state& state, uint16_t opcode)
 template <typename T>
 void ext(machine_state& state, uint16_t opcode)
 {
-    //
-    // TODO: Verify
-    //
-
     auto reg = extract_bits<13, 3>(opcode);
 
     typedef traits<T>::lower_precision_type_t low_precision_t;
-    low_precision_t* ptr = state.get_pointer<low_precision_t>(0, reg);
+    low_precision_t* ptr = state.get_pointer<low_precision_t>(make_effective_address(0, reg));
     low_precision_t value = state.read<low_precision_t>(ptr);
 
-    T result = (T)(sign_extend<low_precision_t>(value) & traits<T>::max);
+    T result = T(sign_extend<low_precision_t>(value));
 
     state.set_status_bit<bit::negative>(is_negative<T>(result));
     state.set_status_bit<bit::zero>(result == 0);
@@ -1323,6 +1319,156 @@ void ext(machine_state& state, uint16_t opcode)
     state.write<T>((T*)ptr, result);
 }
 
+//
+// SWAP
+// Swap register halves
+//
+
+void swap(machine_state& state, uint16_t opcode)
+{
+    auto reg = extract_bits<13, 3>(opcode);
+
+    uint32_t* ptr = state.get_pointer<uint32_t>(make_effective_address(0, reg));
+    uint32_t value = state.read<uint32_t>(ptr);
+    uint32_t result = (value >> 16) | (value << 16);
+
+    state.set_status_bit<bit::negative>(most_significant_bit(result));
+    state.set_status_bit<bit::zero>(result == 0);
+    state.set_status_bit<bit::overflow>(false);
+    state.set_status_bit<bit::carry>(false);
+
+    state.write<uint32_t>(ptr, result);
+}
+
+//
+// TAS
+// Test and set operand
+//
+
+void tas(machine_state& state, uint16_t opcode)
+{
+    auto ea = extract_bits<10, 6>(opcode);
+    
+    auto ptr = state.get_pointer<uint8_t>(ea);
+    auto val = state.read<uint8_t>(ptr);
+
+    state.set_status_bit<bit::negative>(most_significant_bit(val));
+    state.set_status_bit<bit::zero>(val == 0);
+    state.set_status_bit<bit::overflow>(false);
+    state.set_status_bit<bit::carry>(false);
+
+    val |= (1 << 7);
+
+    state.write<uint8_t>(ptr, val);
+}
+
+//
+// TST
+//
+
+template <typename T>
+void tst(machine_state& state, uint16_t opcode)
+{
+    auto ea = extract_bits<10, 6>(opcode);
+    
+    auto ptr = state.get_pointer<T>(ea);
+    auto val = state.read<T>(ptr);
+
+    state.set_status_bit<bit::negative>(is_negative(val));
+    state.set_status_bit<bit::zero>(val == 0);
+    state.set_status_bit<bit::overflow>(false);
+    state.set_status_bit<bit::carry>(false);
+}
+
+//
+// RESET
+// Reset external devices
+//
+
+void reset(machine_state& state, uint16_t opcode)
+{
+    state.reset();
+}
+
+//
+// NOP
+// No operation
+//
+
+void nop(machine_state& state, uint16_t opcode)
+{
+}
+
+//
+// EXG
+// Exchange registers
+//
+
+template <uint16_t operation>
+void exg(machine_state& state, uint16_t opcode)
+{
+    uint32_t mode1, mode2;
+
+    switch (operation)
+    {
+    case 0x8: // D/D
+        mode1 = 0;
+        mode2 = 0;
+        break;
+
+    case 0x9: // A/A
+        mode1 = 1;
+        mode2 = 1;
+        break;
+
+    case 0x11: // D/A
+        mode1 = 0;
+        mode2 = 1;
+        break;
+
+    default:
+        THROW("Invalid operation");
+    }
+
+    auto reg1 = extract_bits<4, 3>(opcode);
+    auto reg2 = extract_bits<13, 3>(opcode);
+
+    auto ptr1 = state.get_pointer<uint32_t>(make_effective_address(mode1, reg1));
+    auto ptr2 = state.get_pointer<uint32_t>(make_effective_address(mode2, reg2));
+
+    auto val1 = state.read<uint32_t>(ptr1);
+    auto val2 = state.read<uint32_t>(ptr2);
+
+    state.write<uint32_t>(ptr1, val2);
+    state.write<uint32_t>(ptr2, val1);
+}
+
+//
+// STOP
+//
+
+void stop(machine_state& state, uint16_t opcode)
+{
+    CHECK_SUPERVISOR(state);
+    auto imm = state.next<uint16_t>();
+    
+    if (state.get_status_bit<bit::trace>())
+    {
+        state.exception(9 /* Trace exception */);
+    }
+
+    bool mode_change_attempt = (imm & (1 << uint32_t(bit::supervisor))) == 0;
+
+    if (mode_change_attempt)
+    {
+        state.exception(8 /* Privilege violation */);
+    }
+
+    auto ptr = state.get_pointer<uint16_t>(reg::status_register);
+    state.write<uint16_t>(ptr, imm);
+
+    state.stop();
+}
 
 #if false
 //void inst_move(machine_state& state, uint16_t opcode);
@@ -1407,12 +1553,12 @@ void inst_asr_reg(machine_state& state, uint16_t opcode);
 void inst_scc(machine_state& state, uint16_t opcode);
 void inst_bcc(machine_state& state, uint16_t opcode);
 void inst_dbcc(machine_state& state, uint16_t opcode);
-void inst_ext(machine_state& state, uint16_t opcode);
-void inst_swap(machine_state& state, uint16_t opcode);
-void inst_tas(machine_state& state, uint16_t opcode);
-void inst_tst(machine_state& state, uint16_t opcode);
-void inst_reset(machine_state& state, uint16_t opcode);
-void inst_nop(machine_state& state, uint16_t opcode);
-void inst_exg(machine_state& state, uint16_t opcode);
+//void inst_ext(machine_state& state, uint16_t opcode);
+//void inst_swap(machine_state& state, uint16_t opcode);
+//void inst_tas(machine_state& state, uint16_t opcode);
+//void inst_tst(machine_state& state, uint16_t opcode);
+//void inst_reset(machine_state& state, uint16_t opcode);
+//void inst_nop(machine_state& state, uint16_t opcode);
+//void inst_exg(machine_state& state, uint16_t opcode);
 
 #endif

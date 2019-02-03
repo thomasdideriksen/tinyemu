@@ -95,6 +95,12 @@ void machine_state::reset()
     THROW("Reset not implemented");
 }
 
+void machine_state::stop()
+{
+    // TODO
+    THROW("Stop not implemented");
+}
+
 void machine_state::set_condition_code_register(uint8_t ccr)
 {
     m_registers.SR = (m_registers.SR & 0xff00) | uint16_t(ccr);

@@ -92,6 +92,7 @@ public:
     void pop_status_register();
     void exception(uint32_t vector);
     void reset();
+    void stop();
     void set_condition_code_register(uint8_t ccr);
 
     template <typename T>

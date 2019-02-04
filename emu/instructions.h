@@ -1625,13 +1625,38 @@ void dbcc(machine_state& state, uint16_t opcode)
 }
 
 //
+// Helper: MULU, MULS
+//
+template <typename TOperand, typename TResult>
+INLINE void mul_helper(machine_state& state, uint16_t opcode)
+{
+    auto src_ea = extract_bits<10, 6>(opcode);
+    auto dst_reg = extract_bits<4, 3>(opcode);
+
+    auto src_ptr = state.get_pointer<uint16_t>(src_ea);
+    auto dst_ptr = state.get_pointer<uint16_t>(make_effective_address(0, dst_reg));
+
+    TOperand src_val = TOperand(state.read(src_ptr));
+    TOperand dst_val = TOperand(state.read(dst_ptr));
+
+    TResult result = TResult(src_val) * TResult(dst_val);
+
+    state.set_status_bit<bit::negative>(is_negative(uint32_t(result)));
+    state.set_status_bit<bit::zero>(result == 0);
+    state.set_status_bit<bit::overflow>(false);
+    state.set_status_bit<bit::carry>(false);
+
+    state.write<uint32_t>((uint32_t*)dst_ptr, result);
+}
+
+//
 // MULU
 // Unsigned multiply
 //
 
 void mulu(machine_state& state, uint16_t opcode)
 {
-
+    mul_helper<uint16_t, uint32_t>(state, opcode);
 }
 
 //
@@ -1641,7 +1666,7 @@ void mulu(machine_state& state, uint16_t opcode)
 
 void muls(machine_state& state, uint16_t opcode)
 {
-
+    mul_helper<int16_t, int32_t>(state, opcode);
 }
 
 

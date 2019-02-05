@@ -592,6 +592,82 @@
             {"bits": 3, "name": "Register (D)"},
             {"bits": 3, "valid": [7]},
             {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}]
+    },
+    {
+        "name": "asx_mem",
+        "pattern": [
+            {"bits": 7, "valid": [112]},
+            {"bits": 1, "name": "Direction", "template": true},
+            {"bits": 2, "valid": [3]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8]}]
+    },
+    {
+        "name": "lsx_mem",
+        "pattern": [
+            {"bits": 7, "valid": [113]},
+            {"bits": 1, "name": "Direction", "template": true},
+            {"bits": 2, "valid": [3]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8]}]
+    },
+    {
+        "name": "roxx_mem",
+        "pattern": [
+            {"bits": 7, "valid": [114]},
+            {"bits": 1, "name": "Direction", "template": true},
+            {"bits": 2, "valid": [3]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8]}]
+    },
+    {
+        "name": "rox_mem",
+        "pattern": [
+            {"bits": 7, "valid": [115]},
+            {"bits": 1, "name": "Direction", "template": true},
+            {"bits": 2, "valid": [3]},
+            {"bits": 6, "name": "Effective Address", "modes": [0, 2, 3, 4, 5, 6, 7, 8]}]
+    },
+    {
+        "name": "asx_reg",
+        "pattern": [
+            {"bits": 4, "valid": [14]},
+            {"bits": 3, "name": "Rotation"},
+            {"bits": 1, "name": "Direction", "template": true},
+            {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}, "template": true},
+            {"bits": 1, "name": "Mode", "template": true},
+            {"bits": 2, "valid": [0]},
+            {"bits": 3, "name": "Register (D)"}]
+    },
+    {
+        "name": "lsx_reg",
+        "pattern": [
+            {"bits": 4, "valid": [14]},
+            {"bits": 3, "name": "Rotation"},
+            {"bits": 1, "name": "Direction", "template": true},
+            {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}, "template": true},
+            {"bits": 1, "name": "Mode", "template": true},
+            {"bits": 2, "valid": [1]},
+            {"bits": 3, "name": "Register (D)"}]
+    },
+    {
+        "name": "roxx_reg",
+        "pattern": [
+            {"bits": 4, "valid": [14]},
+            {"bits": 3, "name": "Rotation"},
+            {"bits": 1, "name": "Direction", "template": true},
+            {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}, "template": true},
+            {"bits": 1, "name": "Mode", "template": true},
+            {"bits": 2, "valid": [2]},
+            {"bits": 3, "name": "Register (D)"}]
+    },
+    {
+        "name": "rox_reg",
+        "pattern": [
+            {"bits": 4, "valid": [14]},
+            {"bits": 3, "name": "Rotation"},
+            {"bits": 1, "name": "Direction", "template": true},
+            {"bits": 2, "name": "Size", "valid": [0, 1, 2], "mapping": {"0": "uint8_t", "1": "uint16_t", "2": "uint32_t"}, "template": true},
+            {"bits": 1, "name": "Mode", "template": true},
+            {"bits": 2, "valid": [3]},
+            {"bits": 3, "name": "Register (D)"}]
     }
 ]
 

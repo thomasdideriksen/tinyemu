@@ -618,8 +618,9 @@ void eori_to_ccr(machine_state& state, uint16_t opcode)
 template <typename O>
 INLINE void logical_immediate_to_sr_helper(machine_state& state, uint16_t opcode)
 {
-    CHECK_SUPERVISOR(state);
     auto imm = state.next<uint16_t>();
+
+    CHECK_SUPERVISOR(state);
     auto ptr = state.get_pointer<uint16_t>(reg::status_register);
     auto sr = state.read(ptr);
     uint16_t result = O::template execute<uint16_t>(sr, imm);
@@ -1505,9 +1506,10 @@ void exg(machine_state& state, uint16_t opcode)
 
 void stop(machine_state& state, uint16_t opcode)
 {
-    CHECK_SUPERVISOR(state);
     auto imm = state.next<uint16_t>();
-    
+
+    CHECK_SUPERVISOR(state);
+
     if (state.get_status_bit<bit::trace>())
     {
         state.exception(9 /* Trace exception */);
@@ -1669,97 +1671,193 @@ void muls(machine_state& state, uint16_t opcode)
     mul_helper<int16_t, int32_t>(state, opcode);
 }
 
-
-
-#if false
-//void inst_move(machine_state& state, uint16_t opcode);
-//void inst_moveq(machine_state& state, uint16_t opcode);
-//void inst_movea(machine_state& state, uint16_t opcode);
-//void inst_movem(machine_state& state, uint16_t opcode);
-//void inst_movep(machine_state& state, uint16_t opcode);
-
 //
-// Bitwise operators
+// Helpers: Shift/rotate operations
 //
-//void inst_and(machine_state& state, uint16_t opcode);
-//void inst_eor(machine_state& state, uint16_t opcode);
-//void inst_or(machine_state& state, uint16_t opcode);
-//void inst_ori(machine_state& state, uint16_t opcode);
-//void inst_andi(machine_state& state, uint16_t opcode);
-//void inst_eori(machine_state& state, uint16_t opcode);
-//void inst_not(machine_state& state, uint16_t opcode);
-//void inst_btst(machine_state& state, uint16_t opcode);
-//void inst_bset(machine_state& state, uint16_t opcode);
-//void inst_bclr(machine_state& state, uint16_t opcode);
-//void inst_bchg(machine_state& state, uint16_t opcode);
-void inst_lsl_mem(machine_state& state, uint16_t opcode);
-void inst_lsl_reg(machine_state& state, uint16_t opcode);
-void inst_lsr_mem(machine_state& state, uint16_t opcode);
-void inst_lsr_reg(machine_state& state, uint16_t opcode);
-void inst_rol_mem(machine_state& state, uint16_t opcode);
-void inst_ror_mem(machine_state& state, uint16_t opcode);
-void inst_rol_reg(machine_state& state, uint16_t opcode);
-void inst_ror_reg(machine_state& state, uint16_t opcode);
-void inst_roxl_mem(machine_state& state, uint16_t opcode);
-void inst_roxr_mem(machine_state& state, uint16_t opcode);
-void inst_roxl_reg(machine_state& state, uint16_t opcode);
-void inst_roxr_reg(machine_state& state, uint16_t opcode);
-void inst_asl_mem(machine_state& state, uint16_t opcode);
-void inst_asr_mem(machine_state& state, uint16_t opcode);
-void inst_asl_reg(machine_state& state, uint16_t opcode);
-void inst_asr_reg(machine_state& state, uint16_t opcode);
 
-//
-// Arithmetic operators
-//
-//void inst_add(machine_state& state, uint16_t opcode);
-//void inst_subi(machine_state& state, uint16_t opcode);
-//void inst_addi(machine_state& state, uint16_t opcode);
-//void inst_addq(machine_state& state, uint16_t opcode);
-//void inst_subq(machine_state& state, uint16_t opcode);
-//void inst_neg(machine_state& state, uint16_t opcode);
-//void inst_negx(machine_state& state, uint16_t opcode);
-//void inst_divu(machine_state& state, uint16_t opcode);
-//void inst_divs(machine_state& state, uint16_t opcode);
+struct operation_rotate_left
+{
+    template <typename T>
+    static T execute(T value, uint32_t shift, bool& last_shifted_out)
+    {
+        last_shifted_out = last_shifted_out_left(value, shift);
+        return rotate_left<T>(value, shift);
+    }
+};
+
+struct operation_rotate_right
+{
+    template <typename T>
+    static T execute(T value, uint32_t shift, bool& last_shifted_out)
+    {
+        last_shifted_out = last_shifted_out_right(value, shift);
+        return rotate_right<T>(value, shift);
+    }
+};
+
+struct operation_shift_left
+{
+    template <typename T>
+    static T execute(T value, uint32_t shift, bool& last_shifted_out)
+    {
+        last_shifted_out = last_shifted_out_left(value, shift);
+        return value << shift;
+    }
+};
+
+struct operation_shift_right
+{
+    template <typename T>
+    static T execute(T value, uint32_t shift, bool& last_shifted_out)
+    {
+        last_shifted_out = last_shifted_out_right(value, shift);
+        return value >> shift;
+    }
+};
 
 //
-// Branch/jump
+// ASx (memory)
+// Arithmetic shift
 //
-//void inst_jmp(machine_state& state, uint16_t opcode);
-//void inst_jsr(machine_state& state, uint16_t opcode);
-//void inst_rts(machine_state& state, uint16_t opcode);
-//void inst_rtr(machine_state& state, uint16_t opcode);
-//void inst_link(machine_state& state, uint16_t opcode);
-//void inst_unlk(machine_state& state, uint16_t opcode);
-//void inst_bra(machine_state& state, uint16_t opcode);
-//void inst_bsr(machine_state& state, uint16_t opcode);
+
+template <uint16_t direction>
+void asx_mem(machine_state& state, uint16_t opcode)
+{
+    auto ea = extract_bits<10, 6>(opcode);
+    auto ptr = state.get_pointer<uint16_t>(ea);
+    auto val = int16_t(state.read(ptr));
+    auto msr_before = most_significant_bit(val);
+
+    bool last_out;
+    switch (direction)
+    {
+    case 0: val = operation_shift_right::execute<int16_t>(val, 1, last_out); break;   // Right
+    case 1: val = operation_shift_left::execute<int16_t>(val, 1, last_out); break;    // left
+    default:
+        THROW("Invalid direction");
+    }
+
+    auto msr_after = most_significant_bit(val);
+
+    state.set_status_bit<bit::extend>(last_out);
+    state.set_status_bit<bit::negative>(msr_after);
+    state.set_status_bit<bit::zero>(val == 0);
+    state.set_status_bit<bit::overflow>(msr_before != msr_after);
+    state.set_status_bit<bit::carry>(last_out);
+
+    state.write<uint16_t>(ptr, uint16_t(val));
+}
 
 //
-// Exceptions
+// LSx (memory)
+// Logical shift
 //
-//void inst_trap(machine_state& state, uint16_t opcode);
-//void inst_trapv(machine_state& state, uint16_t opcode);
-//void inst_rte(machine_state& state, uint16_t opcode);
-//void inst_illegal(machine_state& state, uint16_t opcode);
 
+template <uint16_t direction>
+void lsx_mem(machine_state& state, uint16_t opcode)
+{
+    auto ea = extract_bits<10, 6>(opcode);
+    auto ptr = state.get_pointer<uint16_t>(ea);
+    auto val = state.read<uint16_t>(ptr);
+
+    bool last_out;
+    switch (direction)
+    {
+    case 0: val = operation_shift_right::execute<uint16_t>(val, 1, last_out); break;   // Right
+    case 1: val = operation_shift_left::execute<uint16_t>(val, 1, last_out); break;    // left
+    default:
+        THROW("Invalid direction");
+    }
+
+    state.set_status_bit<bit::extend>(last_out);
+    state.set_status_bit<bit::negative>(is_negative(val));
+    state.set_status_bit<bit::zero>(val == 0);
+    state.set_status_bit<bit::overflow>(false);
+    state.set_status_bit<bit::carry>(last_out);
+
+    state.write<uint16_t>(ptr, val);
+}
 
 //
-// Miscellaneous 
+// ROXx (memory)
+// Rotate with extend
 //
-//void inst_clr(machine_state& state, uint16_t opcode);
-//void inst_cmpi(machine_state& state, uint16_t opcode);
-//void inst_lea(machine_state& state, uint16_t opcode);
-//void inst_pea(machine_state& state, uint16_t opcode);
-//void inst_chk(machine_state& state, uint16_t opcode);
-//void inst_scc(machine_state& state, uint16_t opcode);
-//void inst_bcc(machine_state& state, uint16_t opcode);
-//void inst_dbcc(machine_state& state, uint16_t opcode);
-//void inst_ext(machine_state& state, uint16_t opcode);
-//void inst_swap(machine_state& state, uint16_t opcode);
-//void inst_tas(machine_state& state, uint16_t opcode);
-//void inst_tst(machine_state& state, uint16_t opcode);
-//void inst_reset(machine_state& state, uint16_t opcode);
-//void inst_nop(machine_state& state, uint16_t opcode);
-//void inst_exg(machine_state& state, uint16_t opcode);
 
-#endif
+template <uint16_t direction>
+void roxx_mem(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ROx (memory)
+// Rotate
+//
+
+template <uint16_t direction>
+void rox_mem(machine_state& state, uint16_t opcode)
+{
+    auto ea = extract_bits<10, 6>(opcode);
+    auto ptr = state.get_pointer<uint16_t>(ea);
+    auto val = state.read<uint16_t>(ptr);
+
+    bool last_out;
+    switch (direction)
+    {
+    case 0: val = operation_rotate_right::execute<uint16_t>(val, 1, last_out); break;   // Right
+    case 1: val = operation_rotate_left::execute<uint16_t>(val, 1, last_out); break;    // left
+    default:
+        THROW("Invalid direction");
+    }
+
+    state.set_status_bit<bit::negative>(most_significant_bit(val));
+    state.set_status_bit<bit::zero>(val == 0);
+    state.set_status_bit<bit::overflow>(false);
+    state.set_status_bit<bit::carry>(last_out);
+
+    state.write<uint16_t>(ptr, val);
+}
+
+//
+// ASx (register)
+// Artihmetic shift
+//
+
+template <uint16_t direction, typename T, uint16_t mode>
+void asx_reg(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// LSx (register)
+// Logical shift
+//
+
+template <uint16_t direction, typename T, uint16_t mode>
+void lsx_reg(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ROXx (register)
+// Rotate with extend
+//
+
+template <uint16_t direction, typename T, uint16_t mode>
+void roxx_reg(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}
+
+//
+// ROx (register)
+// Rotate with extend
+//
+
+template <uint16_t direction, typename T, uint16_t mode>
+void rox_reg(machine_state& state, uint16_t opcode)
+{
+    // TODO
+}

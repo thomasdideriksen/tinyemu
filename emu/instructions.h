@@ -1786,7 +1786,7 @@ void lsx_mem(machine_state& state, uint16_t opcode)
 template <uint16_t direction>
 void roxx_mem(machine_state& state, uint16_t opcode)
 {
-    // TODO
+    THROW("ROXx not implemented");
 }
 
 //
@@ -1826,7 +1826,7 @@ void rox_mem(machine_state& state, uint16_t opcode)
 template <uint16_t direction, typename T, uint16_t mode>
 void asx_reg(machine_state& state, uint16_t opcode)
 {
-    // TODO
+    THROW("ASx not implemented");
 }
 
 //
@@ -1837,7 +1837,7 @@ void asx_reg(machine_state& state, uint16_t opcode)
 template <uint16_t direction, typename T, uint16_t mode>
 void lsx_reg(machine_state& state, uint16_t opcode)
 {
-    // TODO
+    THROW("LSx not implemented");
 }
 
 //
@@ -1848,7 +1848,7 @@ void lsx_reg(machine_state& state, uint16_t opcode)
 template <uint16_t direction, typename T, uint16_t mode>
 void roxx_reg(machine_state& state, uint16_t opcode)
 {
-    // TODO
+    THROW("ROXx not implemented");
 }
 
 //
@@ -1859,5 +1859,37 @@ void roxx_reg(machine_state& state, uint16_t opcode)
 template <uint16_t direction, typename T, uint16_t mode>
 void rox_reg(machine_state& state, uint16_t opcode)
 {
-    // TODO
+    THROW("ROx not implemented");
+}
+
+//
+// NBCD
+// Negate decimal with sign extend
+//
+
+void nbcd(machine_state& state, uint16_t opcode)
+{
+    THROW("NBCD not implemented");
+}
+
+//
+// SBCD
+// Subtract decimal with extend
+//
+
+template <uint16_t mode>
+void sbcd(machine_state& state, uint16_t opcode)
+{
+    THROW("SBCD not implemented");
+}
+
+//
+// ABCD
+// Add decimal with extend
+//
+
+template <uint16_t mode>
+void abcd(machine_state& state, uint16_t opcode)
+{
+    THROW("ABCD not implemented");
 }

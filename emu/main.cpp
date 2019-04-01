@@ -68,6 +68,8 @@ Adressing modes:
 
 --> Note: TRAP is a software interrupt
 
+http://raregame.ru/file/15/NEO-GEO_Startup.asm
+
 */
 
 
